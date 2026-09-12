@@ -451,6 +451,70 @@ cobre os tipos que o módulo 310 já cataloga.
   diz a RDC 99999/2025?" devolve `normas: []` (zero alucinação) — os dois
   testes mais críticos do projeto, agora também na camada visual.
 
+### M7 — Alertas
+
+- **Sem credencial de Resend/Telegram no `.env`** (usuário optou por não
+  fornecer agora — ver decisão registrada abaixo). Construídos os 3 canais
+  por completo conforme a doc oficial de cada API, mas só o **webhook foi
+  testado de ponta a ponta com envio real** (contra `webhook.site`, um
+  coletor de teste público) — email (Resend) e telegram (Bot API) ficam
+  implementados e prontos, mas **não disparados de verdade** até existir
+  chave. Isso é uma pendência explícita, não uma suposição escondida.
+- `alerta_regra` já existia desde o schema original (0001); faltava só
+  como não notificar a mesma regra pro mesmo item duas vezes —
+  `alerta_disparo` (migration `0004`), com `unique (alerta_id, item_tipo,
+  item_chave, canal)`, mesmo espírito de idempotência total do resto do
+  projeto.
+- **"Recente" é `coletado_em`/`processado_em`, nunca `data_publicacao`**:
+  o módulo 310 é re-crawleado por inteiro todo dia (decisão do M5), então
+  se o alerta disparasse em cima da data de publicação da norma, uma RDC
+  de 1999 apareceria como "nova" toda manhã. As duas colunas de
+  "primeiro-visto" **não são tocadas pelo `on conflict do update`** de
+  nenhum ingestor (conferido lendo o código dos 4 e confirmado com uma
+  re-inserção real de uma norma já existente: `coletado_em` não mudou) —
+  esse é o sinal correto de "genuinamente novo pro sistema".
+- **`temas` é best-effort**: `norma.tema` existe desde o M1 mas nenhum
+  ingestor até hoje o preenche (achado construindo o M7, não um bug novo)
+  — fica pronto pra quando essa extração existir; hoje só `termos`
+  (substring case-insensitive) encontra alguma coisa de verdade.
+- **2 bugs reais achados testando de ponta a ponta contra um webhook de
+  verdade** (não em teste unitário — só apareceram rodando contra a API
+  real do `webhook.site`, que devolveu 429 depois de uma rajada de
+  requisições):
+  1. `rodar_verificacao` contava **tentativas** de `alerta_disparo`
+     (diferença de contagem da tabela antes/depois), não **sucessos** —
+     um canal que falhava (ex.: 429) ainda incrementava "N notificações
+     enviadas" no log do job. Corrigido: `notificar` agora retorna quantos
+     canais foram enviados **com sucesso**, e é essa soma que o job
+     reporta.
+  2. `ja_disparado` tratava qualquer linha em `alerta_disparo` — inclusive
+     `status='erro'` — como "já tratado", bloqueando pra sempre o reenvio
+     depois de uma falha transitória (o 429 do teste real). Corrigido:
+     só `status='ok'` conta como já disparado; `registrar_disparo` trocou
+     `on conflict do nothing` por `do update` pra uma tentativa nova poder
+     substituir uma linha de erro antiga pela de sucesso.
+- **Achado operacional, não de código**: a primeira tentativa de teste
+  E2E usou uma regra sem `termos`/`temas` (que casa com "qualquer coisa
+  nova", uso legítimo) contra um banco onde as 4.579 normas do M2 tinham
+  `coletado_em` de "hoje" (todo o histórico foi carregado nesta mesma
+  sessão) — resultado: ~4.600 tentativas de webhook de uma vez, gerando
+  429 no `webhook.site`. Não é um bug do motor de alertas (em operação
+  normal, só normas genuinamente novas por dia teriam `coletado_em`
+  recente — um número pequeno), é um artefato de todo o histórico ter
+  sido carregado no mesmo dia que o M7 foi construído. Revalidado depois
+  com uma regra de termo específico contra um item de teste isolado: 1
+  match, 1 envio, 1 registro em `alerta_disparo`, dedupe confirmado numa
+  segunda execução.
+- Endpoints REST simples pra gerenciar regras — sem autenticação (mesmo
+  estado do resto da API até aqui; ponto de atenção antes de expor a
+  internet, não resolvido neste milestone): `POST /alertas` (valida que
+  `destino` tem o campo certo pro(s) canal(is) escolhido(s) — ex.: canal
+  `webhook` exige `destino.url` — antes de gravar), `GET /alertas`,
+  `PATCH /alertas/{id}` (liga/desliga), `DELETE /alertas/{id}`.
+- `app/scheduler.py`: `scripts.verificar_alertas` roda por último na lista
+  de scripts diários — só depois que as 4 fontes já carregaram é que
+  existe "recente" de verdade pra casar contra as regras.
+
 ## Milestones (status)
 
 - [x] M0 — Reconhecimento das fontes.
@@ -464,5 +528,7 @@ cobre os tipos que o módulo 310 já cataloga.
 - [x] M5 — Tempo real (INLABS, notícias gov.br, módulo 630, scheduler,
       `/timeline`, `/consultas-publicas`, `/health/fontes`).
 - [x] M6 — Frontend Next.js (chat, timeline, consultas públicas).
-- [ ] M7 — Alertas.
+- [x] M7 — Alertas (`alerta_regra`/`alerta_disparo`, canais email/telegram/
+      webhook — só webhook testado com envio real, os outros dois pendentes
+      de credencial —, `/alertas` CRUD, scheduler).
 - [ ] M8 (opcional) — Ponte com licitações.

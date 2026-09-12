@@ -11,8 +11,15 @@ from contextlib import asynccontextmanager
 from datetime import date, datetime
 
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
+from app.alertas import (
+    CANAIS_VALIDOS,
+    criar_regra,
+    definir_ativo,
+    excluir_regra,
+    listar_regras,
+)
 from app.chat import responder
 from app.config import get_settings
 from app.db import close_pool, get_pool
@@ -150,3 +157,95 @@ async def chat(payload: PerguntaChat) -> RespostaChatAPI:
             for n in resultado.normas
         ],
     )
+
+
+class RegraAlertaCriar(BaseModel):
+    nome: str
+    termos: list[str] = []
+    temas: list[str] = []
+    canais: list[str]
+    destino: dict[str, str]
+
+    @field_validator("canais")
+    @classmethod
+    def _valida_canais(cls, v: list[str]) -> list[str]:
+        if not v:
+            raise ValueError("pelo menos um canal é obrigatório")
+        invalidos = set(v) - CANAIS_VALIDOS
+        if invalidos:
+            raise ValueError(
+                f"canais inválidos: {sorted(invalidos)} (válidos: {sorted(CANAIS_VALIDOS)})"
+            )
+        return v
+
+
+class RegraAlertaResponse(BaseModel):
+    id: str
+    nome: str
+    termos: list[str]
+    temas: list[str]
+    canais: list[str]
+    destino: dict
+    ativo: bool
+
+
+class AtivoUpdate(BaseModel):
+    ativo: bool
+
+
+def _validar_destino(canais: list[str], destino: dict[str, str]) -> None:
+    """`destino` depende do canal — ver `app/alertas.py` pros campos que
+    cada `enviar_*` espera. Falha aqui é bem melhor que só descobrir no
+    `job_execucao` de amanhã que o alerta não tinha pra onde mandar."""
+    faltando = []
+    if "webhook" in canais and not destino.get("url"):
+        faltando.append("destino.url (canal webhook)")
+    if "email" in canais and not destino.get("email"):
+        faltando.append("destino.email (canal email)")
+    if "telegram" in canais and not destino.get("chat_id"):
+        faltando.append("destino.chat_id (canal telegram)")
+    if faltando:
+        raise HTTPException(status_code=422, detail=f"destino incompleto: {', '.join(faltando)}")
+
+
+@app.post("/alertas", status_code=201)
+async def criar_alerta(payload: RegraAlertaCriar) -> RegraAlertaResponse:
+    """Cria uma regra de alerta (seção "Alertas" do briefing) — casada
+    contra normas/notícias/consultas públicas/DOU novos a cada execução
+    diária do scheduler (`scripts/verificar_alertas.py`)."""
+    _validar_destino(payload.canais, payload.destino)
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        regra = await criar_regra(
+            conn, payload.nome, payload.termos, payload.temas, payload.canais, payload.destino
+        )
+    return RegraAlertaResponse(**vars(regra))
+
+
+@app.get("/alertas")
+async def listar_alertas() -> list[RegraAlertaResponse]:
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        regras = await listar_regras(conn)
+    return [RegraAlertaResponse(**vars(r)) for r in regras]
+
+
+@app.patch("/alertas/{alerta_id}")
+async def atualizar_alerta(alerta_id: str, payload: AtivoUpdate) -> dict[str, str]:
+    """Único campo editável por ora é `ativo` — ligar/desligar uma regra
+    sem precisar recriá-la."""
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        achou = await definir_ativo(conn, alerta_id, payload.ativo)
+    if not achou:
+        raise HTTPException(status_code=404, detail="alerta não encontrado")
+    return {"status": "ok"}
+
+
+@app.delete("/alertas/{alerta_id}", status_code=204)
+async def deletar_alerta(alerta_id: str) -> None:
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        achou = await excluir_regra(conn, alerta_id)
+    if not achou:
+        raise HTTPException(status_code=404, detail="alerta não encontrado")

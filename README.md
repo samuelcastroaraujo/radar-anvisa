@@ -105,5 +105,12 @@ cada fonte de ingestão).
 Frontend (`frontend/`, Next.js) em `M6`: chat, linha do tempo e consultas
 públicas, todos consumindo o backend acima — testado de ponta a ponta
 (pergunta real → RAG real → resposta com citação e status de vigência
-correto renderizada na tela). Detalhes de arquitetura, decisões e os
-relatórios completos em `CLAUDE.md`.
+correto renderizada na tela).
+
+Alertas (`M7`): `POST /alertas` cria uma regra (termos + canal
+email/telegram/webhook) que passa a ser checada contra tudo que for
+publicado a partir dali, sem duplicar aviso. Testado de ponta a ponta com
+envio real pelo canal webhook; email e telegram estão implementados
+conforme a documentação oficial de cada API, mas ainda sem credencial pra
+disparo real (pendência explícita, ver `CLAUDE.md`). Detalhes de
+arquitetura, decisões e os relatórios completos em `CLAUDE.md`.

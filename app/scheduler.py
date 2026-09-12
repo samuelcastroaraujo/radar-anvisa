@@ -27,14 +27,17 @@ from apscheduler.triggers.cron import CronTrigger
 
 logger = logging.getLogger("radar_anvisa.scheduler")
 
-# Ordem: módulo 310 primeiro — é a fonte de verdade sobre normas; INLABS por
-# último tenta vincular matérias do DOU a normas que as fontes anteriores
-# já tenham gravado no mesmo run.
+# Ordem: módulo 310 primeiro — é a fonte de verdade sobre normas; INLABS
+# tenta vincular matérias do DOU a normas que as fontes anteriores já
+# tenham gravado no mesmo run; alertas roda por último de propósito (M7) —
+# só depois que todo o resto já carregou é que existe "recente" de verdade
+# pra casar contra as regras.
 SCRIPTS_DIARIOS = (
     "scripts.carga_historica_310",
     "scripts.carga_participacao_social",
     "scripts.carga_noticias_govbr",
     "scripts.carga_inlabs",
+    "scripts.verificar_alertas",
 )
 
 
