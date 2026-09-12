@@ -1,0 +1,205 @@
+# Golden QA — seção 10 do briefing: "no mínimo 30 perguntas reais e a
+# resposta esperada (número da norma correto + status correto)".
+#
+# Cada norma abaixo foi conferida direto no banco (research/FONTES.md e o
+# relatório do M2 documentam de onde vieram os dados) — nada aqui foi
+# inventado. A maioria das perguntas é sobre uma norma específica porque
+# isso testa o caminho determinístico (lookup direto por tipo/número/ano),
+# que não depende de o LLM "acertar" o texto — só de o `normas` estruturado
+# bater. As perguntas temáticas no fim testam o caminho de busca híbrida.
+
+- pergunta: "A RDC 51/2007 ainda está vigente?"
+  tipo_ato_esperado: RDC
+  numero_esperado: "51"
+  ano_esperado: 2007
+  status_esperado: vigente
+
+- pergunta: "O que diz a RDC 92 de 2016?"
+  tipo_ato_esperado: RDC
+  numero_esperado: "92"
+  ano_esperado: 2016
+  status_esperado: vigente
+
+- pergunta: "A RDC 932/2024 está em vigor?"
+  tipo_ato_esperado: RDC
+  numero_esperado: "932"
+  ano_esperado: 2024
+  status_esperado: vigente
+
+- pergunta: "RDC 675 de 2022, qual o status?"
+  tipo_ato_esperado: RDC
+  numero_esperado: "675"
+  ano_esperado: 2022
+  status_esperado: vigente
+
+- pergunta: "A RDC 1/2011 ainda vale?"
+  tipo_ato_esperado: RDC
+  numero_esperado: "1"
+  ano_esperado: 2011
+  status_esperado: vigente
+
+- pergunta: "A IN 199/2022 está vigente?"
+  tipo_ato_esperado: IN
+  numero_esperado: "199"
+  ano_esperado: 2022
+  status_esperado: vigente
+
+- pergunta: "RDC 177 de 2017 ainda é válida?"
+  tipo_ato_esperado: RDC
+  numero_esperado: "177"
+  ano_esperado: 2017
+  status_esperado: vigente
+
+- pergunta: "A Portaria 1081/2023 está vigente?"
+  tipo_ato_esperado: POR
+  numero_esperado: "1081"
+  ano_esperado: 2023
+  status_esperado: vigente
+
+- pergunta: "RDC 199 de 2017, qual o status de vigência?"
+  tipo_ato_esperado: RDC
+  numero_esperado: "199"
+  ano_esperado: 2017
+  status_esperado: vigente
+
+- pergunta: "A IN 75/2020 sobre rotulagem nutricional ainda vale?"
+  tipo_ato_esperado: IN
+  numero_esperado: "75"
+  ano_esperado: 2020
+  status_esperado: vigente
+
+- pergunta: "A RDC 954/2024 é vigente?"
+  tipo_ato_esperado: RDC
+  numero_esperado: "954"
+  ano_esperado: 2024
+  status_esperado: vigente
+
+- pergunta: "RDC 36 de 2010, ainda está em vigor?"
+  tipo_ato_esperado: RDC
+  numero_esperado: "36"
+  ano_esperado: 2010
+  status_esperado: vigente
+
+- pergunta: "A RDC 84/2016 do Memento Fitoterápico está vigente?"
+  tipo_ato_esperado: RDC
+  numero_esperado: "84"
+  ano_esperado: 2016
+  status_esperado: vigente
+
+- pergunta: "A RDC 1003 de 2025 está em vigor?"
+  tipo_ato_esperado: RDC
+  numero_esperado: "1003"
+  ano_esperado: 2025
+  status_esperado: vigente
+
+- pergunta: "A RDC 609/2022 ainda está vigente?"
+  tipo_ato_esperado: RDC
+  numero_esperado: "609"
+  ano_esperado: 2022
+  status_esperado: revogada
+
+- pergunta: "A Portaria 42 de 1998 sobre rotulagem de alimentos embalados ainda vale?"
+  tipo_ato_esperado: POR
+  numero_esperado: "42"
+  ano_esperado: 1998
+  status_esperado: revogada
+
+- pergunta: "A RDC 46/2000 está vigente?"
+  tipo_ato_esperado: RDC
+  numero_esperado: "46"
+  ano_esperado: 2000
+  status_esperado: revogada
+
+- pergunta: "RDC 3 de 2001, qual o status de vigência?"
+  tipo_ato_esperado: RDC
+  numero_esperado: "3"
+  ano_esperado: 2001
+  status_esperado: revogada
+
+- pergunta: "A RDC 48/2007 ainda é válida?"
+  tipo_ato_esperado: RDC
+  numero_esperado: "48"
+  ano_esperado: 2007
+  status_esperado: revogada
+
+- pergunta: "A Portaria Conjunta 2 de 1996 está vigente?"
+  tipo_ato_esperado: PCJ
+  numero_esperado: "2"
+  ano_esperado: 1996
+  status_esperado: revogada
+
+- pergunta: "A Portaria 33/1998 ainda está em vigor?"
+  tipo_ato_esperado: POR
+  numero_esperado: "33"
+  ano_esperado: 1998
+  status_esperado: revogada
+
+- pergunta: "A Portaria 161 de 1997 sobre Sistema Lactoperoxidase ainda vale?"
+  tipo_ato_esperado: POR
+  numero_esperado: "161"
+  ano_esperado: 1997
+  status_esperado: revogada
+
+- pergunta: "RDC 11 de 2013, ainda está vigente?"
+  tipo_ato_esperado: RDC
+  numero_esperado: "11"
+  ano_esperado: 2013
+  status_esperado: revogada
+
+- pergunta: "A RDC 15/2015 está em vigor?"
+  tipo_ato_esperado: RDC
+  numero_esperado: "15"
+  ano_esperado: 2015
+  status_esperado: revogada
+
+- pergunta: "A IN 31/2019 que revoga a IN 12/2010 ainda vale?"
+  tipo_ato_esperado: INM
+  numero_esperado: "31"
+  ano_esperado: 2019
+  status_esperado: revogada
+
+- pergunta: "RDC 187 de 2017 sobre Soros Hiperimunes, está vigente?"
+  tipo_ato_esperado: RDC
+  numero_esperado: "187"
+  ano_esperado: 2017
+  status_esperado: revogada
+
+- pergunta: "A RDC 740/2022 ainda está em vigor?"
+  tipo_ato_esperado: RDC
+  numero_esperado: "740"
+  ano_esperado: 2022
+  status_esperado: revogada
+
+- pergunta: "A IN 5 de 2012 sobre Denominações Comuns ainda vale?"
+  tipo_ato_esperado: INM
+  numero_esperado: "5"
+  ano_esperado: 2012
+  status_esperado: revogada
+
+- pergunta: "A Portaria 350/1998 está vigente?"
+  tipo_ato_esperado: POR
+  numero_esperado: "350"
+  ano_esperado: 1998
+  status_esperado: revogada
+
+# Anti-alucinação (seção 10): RDC que não existe -- resposta certa é dizer
+# que não encontrou, nunca inventar um número/ementa.
+- pergunta: "O que diz a RDC 9999 de 2023?"
+  nao_deve_encontrar: true
+
+- pergunta: "Existe alguma RDC 8888 de 2030?"
+  nao_deve_encontrar: true
+
+# Temáticas (busca híbrida) -- validadas manualmente antes de entrar aqui
+# (ver CLAUDE.md, M3/M4).
+- pergunta: "Qual RDC rege rotulagem nutricional de suplemento alimentar?"
+  tipo_ato_esperado: RDC
+  numero_esperado: "243"
+  ano_esperado: 2018
+  status_esperado: vigente
+
+- pergunta: "Qual norma trata de boas práticas de manipulação em farmácia magistral?"
+  tipo_ato_esperado: RDC
+  numero_esperado: "67"
+  ano_esperado: 2007
+  status_esperado: revogada

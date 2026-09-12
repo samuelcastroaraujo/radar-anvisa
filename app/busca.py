@@ -27,6 +27,10 @@ class FiltroBusca:
     ano: int | None = None
     tipo_ato: str | None = None
     status_vigencia: str | None = None
+    norma_id: str | None = None
+    """Escopa a busca a uma única norma — usado pelo chat (app/chat.py)
+    quando a pergunta já identificou um ato específico, pra buscar os
+    trechos mais relevantes dentro dele em vez de pegar todos os chunks."""
 
 
 @dataclass
@@ -85,6 +89,10 @@ def _where_filtro(filtro: FiltroBusca | None, proximo_indice: int) -> tuple[str,
         if filtro.status_vigencia:
             condicoes.append(f"n.status_vigencia = ${i}")
             valores.append(filtro.status_vigencia)
+            i += 1
+        if filtro.norma_id:
+            condicoes.append(f"c.norma_id = ${i}")
+            valores.append(filtro.norma_id)
             i += 1
     if not condicoes:
         return "", []

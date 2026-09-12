@@ -265,6 +265,64 @@ navegação da listagem que o parser do M2 pegou por engano em vez do `<p>`
 de ementa nesses casos específicos. Não afeta status_vigencia nem a busca
 em si (o texto do chunk continua correto), só o campo `ementa` exibido.
 
+### M4 — Chat RAG
+- **LLM via OpenRouter, não Anthropic direto** (`app/llm.py`): mesma
+  decisão do M3 — a chave disponível é da OpenRouter, que também expõe
+  `anthropic/claude-sonnet-4.5` (via Amazon Bedrock) no formato de chat
+  completions da OpenAI. Testado de verdade antes de decidir. O SDK
+  `anthropic` (dependência do M1) acabou não sendo usado — o endpoint de
+  chat completions da OpenRouter para modelos Anthropic não fala o
+  protocolo nativo da Anthropic (`/v1/messages`), só o formato OpenAI:
+  usar o SDK `anthropic` exigiria reimplementar a tradução de formato à
+  toa, então ficamos só com `openai.AsyncOpenAI` apontado pro
+  `base_url` da OpenRouter, igual ao M3.
+- `app/intent.py`: roteamento de intenção (seção 7) — norma específica
+  (regex + lookup direto), temporal (`norma.data_publicacao`, com aviso
+  explícito de que notícias/DOU ainda não estão indexados — isso é M5),
+  consulta pública (resposta honesta e determinística, sem chamar o LLM à
+  toa, porque o módulo 630 ainda não foi ingerido) e temática (busca
+  híbrida do M3).
+- **Achado real, não suposto**: a base tem o mesmo tipo de ato sob siglas
+  diferentes dependendo de qual parte do AnvisaLegis alimentou aquele
+  registro (`INM`/`IN`/"INSTRUÇÃO NORMATIVA " truncada, `RES`/`RE`,
+  `POR`/`PRT`, e uma "PORTARIA CONJUNTA MS" truncada em 20 caracteres ao
+  lado da sigla `PCJ`). Resolvido sem migração destrutiva: o lookup por
+  norma específica busca por um *grupo* de siglas equivalentes
+  (`GRUPOS_TIPO_ATO`), não uma sigla exata — mais seguro que arriscar
+  fundir linhas que podem não ser duplicatas de verdade.
+- Resposta "não encontrei" (RDC inexistente, consulta pública) é
+  **determinística, sem gastar uma chamada de LLM** — mais barato e
+  garante zero alucinação nesses casos por construção, não por sorte do
+  modelo.
+- `supabase/migrations/0002_chat_metricas.sql`: tabela `chat_metrica`
+  (pergunta, intenção, nº chunks recuperados, teve citação, tokens,
+  custo, latência) — seção 10 do briefing.
+- `tests/golden_qa.yaml` + `tests/test_golden_qa.py`: 33 perguntas reais
+  (número + status conferidos direto no banco antes de escrever a
+  pergunta, nenhum inventado), incluindo as 2 de anti-alucinação da seção
+  10 (RDC que não existe). Marcado `golden_qa` e excluído do `pytest -q`
+  padrão via `addopts` (faz chamadas reais de LLM, ~7 min, custo real) —
+  roda de propósito com `uv run pytest -m golden_qa`.
+- **2 causas raiz achadas rodando o golden QA pela primeira vez** (33
+  perguntas, não só as que eu tinha testado manualmente — 3 testes
+  falharam, por estas 2 causas):
+  1. "Portaria Conjunta" não era reconhecida como norma específica (o
+     regex não esperava a palavra extra entre "Portaria" e o número) —
+     virava busca temática e claro que não achava a norma certa.
+     Corrigido com um grupo `PCJ` dedicado (achado do item anterior).
+  2. O teste original checava `intencao == "nao_encontrado"` pros casos
+     de RDC inexistente, mas o código deliberadamente mantém a intenção
+     *detectada* (`norma_especifica`) mesmo quando não encontra nada —
+     é mais útil pra métricas saber "quantas perguntas sobre norma
+     específica não acharam nada" do que perder essa distinção. Corrigi
+     o teste, não o código: o que importa pra anti-alucinação é
+     `normas` vir vazio, não o rótulo da intenção.
+
+Resultado: **33/33 perguntas do golden QA passando** depois das
+correções. Métricas agregadas reais (`chat_metrica`, 40 respostas
+incluindo testes manuais): latência média ~9,8s, ~3,5 chunks recuperados
+por resposta, 87% com citação de norma na resposta, custo total ~US$0,40.
+
 ## Milestones (status)
 
 - [x] M0 — Reconhecimento das fontes.
@@ -274,7 +332,7 @@ em si (o texto do chunk continua correto), só o campo `ementa` exibido.
       status derivado). 4.579 normas, 11.848 relações no Supabase.
 - [x] M3 — Chunking + embeddings + busca híbrida. 27.355 chunks
       embeddados, busca validada com as perguntas de exemplo do briefing.
-- [ ] M4 — Chat RAG (`/chat` + golden QA).
+- [x] M4 — Chat RAG (`/chat` + golden QA). 33/33 perguntas passando.
 - [ ] M5 — Tempo real (INLABS, RSS/notícias, módulo 630, scheduler, `/timeline`).
 - [ ] M6 — Frontend Next.js.
 - [ ] M7 — Alertas.

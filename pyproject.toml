@@ -27,6 +27,7 @@ dev = [
     "pytest>=8.3",
     "pytest-asyncio>=0.24",
     "asyncpg-stubs>=0.30",
+    "pyyaml>=6.0.3",
 ]
 
 [tool.uv]
@@ -52,3 +53,8 @@ exclude = "^research/"
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+# golden_qa faz chamadas reais de LLM (~30 perguntas, ~3 min, custo real) —
+# fora do "pytest -q" do dia a dia por padrão; rodar de propósito com
+# `uv run pytest -m golden_qa` (o teste já se pula sozinho sem credenciais).
+addopts = "-m \"not golden_qa\""
+markers = ["golden_qa: regressão de qualidade do RAG contra banco e LLM reais (seção 10)"]
