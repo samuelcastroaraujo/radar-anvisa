@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html class="aui ltr yui3-js-enabled js" dir="ltr" lang="pt-BR" amp>
+    <head>
+    	<title>ResoluÁ„o da Diretoria Colegiada - RDC n∫ 842, de 22/02/2024	</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    	<meta http-equiv="Content-Type" content="text/html" charset="utf-8" />
+    	<!-- <meta http-equiv="Content-Type" content="text/html;charset=ISO-8859-1" /> -->
+        <link rel="manifest" href="/manifest.json">
+        <meta name="theme-color" content="#1e2b4d">
+        <link rel="icon" type="image/png" sizes="32x32" href="/v2/img/favicon-32x32.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/v2/img/favicon-16x16.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        
+        <!-- 
+		<link rel="apple-touch-icon" sizes="32x32" href="/v2/img/mobile/logo_app32.png" />
+		<link rel="apple-touch-icon" sizes="96x96" href="/v2/img/mobile/logo_app96.png" />
+		-->
+		<link rel="apple-touch-icon" sizes="144x144" href="/v2/img/mobile/logo_app144.png" />
+		<link rel="apple-touch-icon" sizes="192x192" href="/v2/img/mobile/logo_app192.png" />
+        
+        <link href="//cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+		<link href="//fonts.cdnfonts.com/css/rawline" rel="stylesheet">
+		<link href="//use.fontawesome.com/releases/v5.7.2/css/all.css" rel="stylesheet" type="text/css">
+		<link href="/v2/css/header.css?20260912" rel="stylesheet" type="text/css">
+		<link href="/v2/css/custom.css?20260912" rel="stylesheet" type="text/css">
+		<link rel="stylesheet" href="/view/css/jquery-ui.css" />
+		<link rel="stylesheet" href="/view/css/styles.css?20260912" type="text/css" />
+		<link rel="stylesheet" href="/view/css/style.css?20260912" type="text/css" />
+		<link rel="stylesheet" href="/view/css/treeview.css" type="text/css" />
+		<link rel="stylesheet" href="/v2/css/social-media.css?20260912" type="text/css" />
+		<link rel="stylesheet" href="/v2/css/texto-ato.css?20260912" type="text/css" />
+		<!-- CUSTOM ANVISA -->
+		<link rel="stylesheet" href="/v2/css/folha_rosto_anvisa.css?20260912" type="text/css" />
+	</head>
+	<body id="corpo" class="">
+		<div class="container-fluid">
+			<div class="container">
+    			<div class="noprint" style="border-bottom: 1px solid #ccc; padding: 8px 0;">
+                	<nav id="breadcrumbs">
+                        <ul class="breadcrumb breadcrumb-horizontal">
+                        	<li>
+                        		<a href="/action/ActionDatalegis.php?acao=apresentacao&cod_menu=9882&cod_modulo=310" title="Voltar para Home">
+                        			<i class="fas fa-home"></i>
+                        		</a>
+                        	</li>
+                        	<li><span class="divider"><i class="fas fa-chevron-right"></i></span></li>
+                        	<li class="first">
+                                <a href="/action/ActionDatalegis.php?acao=categorias&cod_modulo=310&menuOpen=true">NORMAS REGULAT”RIAS    DA ANVISA</a>
+                        	</li>
+    					<li><span class="divider"><i class="fas fa-chevron-right"></i></span></li>
+                        <li class="active last">
+                            <a href="/action/ActionDatalegis.php?acao=abrirResenhaAnoData&cod_modulo=310&cod_menu=9882">NORMAS REVOGADAS</a>
+                        </li>
+                    	</ul>
+                    </nav>
+                    <a href="javascript:;" id="voltar" class="float-right" onclick="window.close()">
+                    	<i class="fas fa-chevron-left"></i>&nbsp;&nbsp;Voltar
+                    </a>
+				</div>
+    			<div class="noprint container" style="padding: 0 10px; margin: 0; text-align: right; display: flex;">
+            		<div id="barra-icones" class="item">
+            			<ul>
+        				<li>
+            				<a href="javascript:;" onclick="copyTextToClipboard('https://anvisalegis.datalegis.net/action/UrlPublicasAction.php?acao=abrirAtoPublico&num_ato=00000842&sgl_tipo=RDC&sgl_orgao=RDC/DC/ANVISA/MS&vlr_ano=2024&seq_ato=000&cod_modulo=310&cod_menu=9882', this)" data-toggle="tooltip" data-placement="bottom" title="Copie o link do Ato">
+            					<i class="fas fa-link" aria-hidden="true"></i> <span class="ocultar-mobile">COPIAR LINK</span>
+            				</a>
+        				</li>
+        				<li>
+            				<a href="javascript:;" onclick="tags('00000842','RDC','RDC/DC/ANVISA/MS','2024','000');" title="Cadastre aqui suas Tags para o ATO">
+            					<i class="fas fa-tags" aria-hidden="true"></i> <span class="ocultar-mobile">CRIAR TAGS</span>
+            				</a>
+        				</li>
+        				<li>
+            				<a href="javascript:;" onclick="imprimir();">
+            					<i class="fa fa-print" aria-hidden="true"></i> <span class="ocultar-mobile">IMPRIMIR</span>
+            				</a>
+        				</li>
+        				<li>
+            				<a href="javascript:;" onclick="pdf()">
+            					<i class="fas fa-file-pdf" aria-hidden="true"></i> <span class="ocultar-mobile">PDF</span>
+            				</a>
+        				</li>
+        				<!-- 
+                        -->
+        				<li>
+            				<a id="texto-notas" href="javascript:;" onclick="abrirTodosLinkNota()">
+            					<i class="fas fa-folder-open" aria-hidden="true"></i> <span class="ocultar-mobile">VER NOTAS DE ALTERA«√O</span>
+            				</a>
+        				</li>
+        				<li>
+            				<a id="texto-compilado" href="javascript:;" onclick="fecharTodosLinkNota()" style="text-decoration: underline;">
+            					<i class="fas fa-folder" aria-hidden="true"></i> <span class="ocultar-mobile">FECHAR NOTAS DE ALTERA«√O</span>
+            				</a>
+        				</li>
+        			</ul>
+    			
+				</div>
+			
+    			<div class="font-settings item item1" style="width: 90px">
+        			<a href="javascript:mudaFonte('mais');" title="Aumentar Texto" style="padding: 0 2px; font-size: 20px; color: black; text-decoration: none;font-weight: 400;">
+        				<i class="glyphicon glyphicon-font"></i>+
+        			</a>
+        			<i style="padding: 0 2px; margin: -15px 0 5px 0; font-size: 20px; color: #424242;">|</i>
+        			<a href="javascript:mudaFonte('menos');" title="Diminur Texto" style="padding: 0 2px; font-size: 17px; color: black; text-decoration: none;font-weight: 400;">
+        				<i class="glyphicon glyphicon-font"></i>-
+        			</a>
+        		</div>
+    		
+    		</div>
+            <div class="noprint social-media-share hide" style="display: none;">
+                <a class="share-facebook" href="https://www.facebook.com/sharer.php?u=https%3A%2F%2Fanvisalegis.datalegis.net%2Faction%2FUrlPublicasAction.php%3Facao%3DabrirAtoPublico%26num_ato%3D00000842%26sgl_tipo%3DRDC%26sgl_orgao%3DRDC%2FDC%2FANVISA%2FMS%26vlr_ano%3D2024%26seq_ato%3D000%26cod_modulo%3D310%26cod_menu%3D9882" target="_blank"></a>
+                <a class="share-twitter" href="http://twitter.com/intent/tweet?text=Resolu√ß√£o da Diretoria Colegiada - RDC n¬∫ 842, de 22/02/2024	&amp;url=https%3A%2F%2Fanvisalegis.datalegis.net%2Faction%2FUrlPublicasAction.php%3Facao%3DabrirAtoPublico%26num_ato%3D00000842%26sgl_tipo%3DRDC%26sgl_orgao%3DRDC%2FDC%2FANVISA%2FMS%26vlr_ano%3D2024%26seq_ato%3D000%26cod_modulo%3D310%26cod_menu%3D9882" target="_blank"></a>
+                <a class="share-linkedin" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https%3A%2F%2Fanvisalegis.datalegis.net%2Faction%2FUrlPublicasAction.php%3Facao%3DabrirAtoPublico%26num_ato%3D00000842%26sgl_tipo%3DRDC%26sgl_orgao%3DRDC%2FDC%2FANVISA%2FMS%26vlr_ano%3D2024%26seq_ato%3D000%26cod_modulo%3D310%26cod_menu%3D9882" target="_blank"></a>
+                <a class="share-whatsapp" href="https://api.whatsapp.com/send?phone=&amp;text=https%3A%2F%2Fanvisalegis.datalegis.net%2Faction%2FUrlPublicasAction.php%3Facao%3DabrirAtoPublico%26num_ato%3D00000842%26sgl_tipo%3DRDC%26sgl_orgao%3DRDC%2FDC%2FANVISA%2FMS%26vlr_ano%3D2024%26seq_ato%3D000%26cod_modulo%3D310%26cod_menu%3D9882" target="_blank"></a>
+            </div>
+		<article class="article">
+    		<div id="conteudo">
+				<div class="tab_menor noprint" style="border-bottom: 1px solid #9a9a9a; padding-bottom: 10px; margin: 10px 0;">
+					<div class="row">
+						<div class="col-9">
+    				<strong><span class="ico-situacao revogado" title="Revogado">REVOGADO</span>ResoluÁ„o da Diretoria Colegiada - RDC n∫ 842, de 22/02/2024	</strong>&nbsp;
+						</div>
+						<div class="col-3 text-right">
+							<a class="btn btn-primary" style="color: white;" onclick="javascript:LinkTexto(&#039;RDC&#039;,&#039;00000842&#039;,&#039;222&#039;,&#039;2024&#039;,&#039;ANVISA/MS&#039;,&#039;&#039;,&#039;&#039;,&#039;&#039;)">Ver mais detalhes</a>
+						</div>
+					</div>
+    			</div>
+    			<div class="ato">
+<p style="text-align: center;">MINIST&Eacute;RIO DA SA&Uacute;DE<p style="text-align: center;">AG&Ecirc;NCIA NACIONAL DE VIGIL&Acirc;NCIA SANIT&Aacute;RIA</p><p style="text-align: center;">DIRETORIA COLEGIADA</p><p style="text-align: center;">RESOLU&Ccedil;&Atilde;O - RDC N&ordm; 842, DE 22 DE FEVEREIRO DE 2024</p><p style="text-align: justify; margin-left: 50%;">Disp&otilde;e sobre a atualiza&ccedil;&atilde;o da lista de Denomina&ccedil;&otilde;es Comuns Brasileiras (DCB).</p><br><p style="display: block; border-top: 1px solid black; border-bottom: 1px solid black; text-align: center; border-color: red !important;" class="link-revogado"><br><em class="link-revogado" style="color: red !important;">Revogada pela <a href="javascript:LinkTexto('RDC','00000955','000','2024','RDC/DC/ANVISA/MS','','','')">Resolu&ccedil;&atilde;o da Diretoria Colegiada - RDC n&ordm; 955, de 20/12/2024</a></em><br>&nbsp;</p><p>A DIRETORIA COLEGIADA DA AG&Ecirc;NCIA NACIONAL DE VIGIL&Acirc;NCIA SANIT&Aacute;RIA, no uso da atribui&ccedil;&atilde;o que lhe confere o <a href="javascript:LinkTexto('LEI','00009782','000','1999','NI','A','15','')">art. 15, III e IV</a>, aliado ao <a href="javascript:LinkTexto('LEI','00009782','000','1999','NI','A','7','')">art. 7&ordm;, III e IV, da Lei n&ordm; 9.782, de 26 de janeiro de 1999</a>, e ao <a href="javascript:LinkTexto('RES','00000585','000','2021','RDC/DC/ANVISA/MS','A','187','')">art. 187, VI, &sect; 1&ordm; do Regimento Interno</a> aprovado pela <a href="javascript:LinkTexto('RES','00000585','000','2021','RDC/DC/ANVISA/MS','','','')">Resolu&ccedil;&atilde;o da Diretoria Colegiada - RDC n&deg; 585, de 10 de dezembro de 2021</a>, resolve adotar a seguinte Resolu&ccedil;&atilde;o, conforme deliberado em reuni&atilde;o realizada em 21 de fevereiro de 2024, e eu, Diretor-Presidente, determino a sua publica&ccedil;&atilde;o.</p><p>Art. 1&ordm; Ficam inclu&iacute;das as Denomina&ccedil;&otilde;es Comuns Brasileiras (DCB) relacionadas no Anexo I, &agrave; lista de DCB aprovada pela <a href="javascript:LinkTexto('RES','00000469','000','2021','RDC/DC/ANVISA/MS','','','')">Resolu&ccedil;&atilde;o da Diretoria Colegiada - RDC n&ordm; 469, de 23 de fevereiro de 2021</a>, publicada no Di&aacute;rio Oficial da Uni&atilde;o n&deg; 36, de 24 de fevereiro de 2021, Se&ccedil;&atilde;o 1, p&aacute;g. 84.</p><p>Art. 2&ordm; Fica alterada a DCB relacionada no Anexo II, mantendo-se o n&uacute;mero DCB, mediante a revoga&ccedil;&atilde;o daquela a ela correspondente, aprovada pela <a href="javascript:LinkTexto('RES','00000469','000','2021','RDC/DC/ANVISA/MS','','','')">Resolu&ccedil;&atilde;o da Diretoria Colegiada - RDC n&ordm; 469, de 23 de fevereiro de 2021</a>, publicada no Di&aacute;rio Oficial da Uni&atilde;o n&deg; 36, de 24 de fevereiro de 2021, Se&ccedil;&atilde;o 1, p&aacute;g. 84.</p><p>Art. 3&ordm; A justificativa para a altera&ccedil;&atilde;o de denomina&ccedil;&otilde;es da lista de DCB &eacute; apresentada no Anexo II.</p><p>Art. 4&ordm; Esta Resolu&ccedil;&atilde;o entra em vigor na data da sua publica&ccedil;&atilde;o.</p><p style="text-align: center;">ANTONIO BARRA TORRES<br>Diretor-Presidente</p><p style="text-align: center;"><b>ANEXO I - DENOMINA&Ccedil;&Otilde;ES INCLU&Iacute;DAS &Agrave; LISTA DE DCB</b><br>&nbsp;</p><table border="1" cellpadding="1" cellspacing="0" width="100%">	<tbody>		<tr>		</tr>		<tr>			<td colspan="1" rowspan="1"><p>Item</p></td>			<td colspan="1" rowspan="1"><p>N&ordm; DCB</p></td>			<td colspan="1" rowspan="1"><p>DENOMINA&Ccedil;&Atilde;O COMUM BRASILEIRA</p></td>			<td colspan="1" rowspan="1"><p>CAS</p></td>		</tr>		<tr>			<td colspan="1" rowspan="1"><p>1</p></td>			<td colspan="1" rowspan="1"><p>12807</p></td>			<td colspan="1" rowspan="1"><p>caprilato de alila</p></td>			<td colspan="1" rowspan="1"><p>4230-97-1</p></td>		</tr>		<tr>			<td colspan="1" rowspan="1"><p>2</p></td>			<td colspan="1" rowspan="1"><p>12808</p></td>			<td colspan="1" rowspan="1"><p>caproato de isoamila</p></td>			<td colspan="1" rowspan="1"><p>2198-61-0</p></td>		</tr>		<tr>			<td colspan="1" rowspan="1"><p>3</p></td>			<td colspan="1" rowspan="1"><p>12809</p></td>			<td colspan="1" rowspan="1"><p>citral</p></td>			<td colspan="1" rowspan="1"><p>5392-40-5</p></td>		</tr>		<tr>			<td colspan="1" rowspan="1"><p>4</p></td>			<td colspan="1" rowspan="1"><p>12810</p></td>			<td colspan="1" rowspan="1"><p>citronelol</p></td>			<td colspan="1" rowspan="1"><p>106-22-9</p></td>		</tr>		<tr>			<td colspan="1" rowspan="1"><p>5</p></td>			<td colspan="1" rowspan="1"><p>12811</p></td>			<td colspan="1" rowspan="1"><p>mesilato de leuprorrelina</p></td>			<td colspan="1" rowspan="1"><p>1401513-74-3</p></td>		</tr>		<tr>			<td colspan="1" rowspan="1"><p>6</p></td>			<td colspan="1" rowspan="1"><p>12812</p></td>			<td colspan="1" rowspan="1"><p>omaveloxolona</p></td>			<td colspan="1" rowspan="1"><p>1474034-05-3</p></td>		</tr>		<tr>			<td colspan="1" rowspan="1"><p>7</p></td>			<td colspan="1" rowspan="1"><p>12813</p></td>			<td colspan="1" rowspan="1"><p>vorasidenibe</p></td>			<td colspan="1" rowspan="1"><p>1644545-52-7</p></td>		</tr>		<tr>			<td colspan="1" rowspan="1"><p>8</p></td>			<td colspan="1" rowspan="1"><p>12814</p></td>			<td colspan="1" rowspan="1"><p>toripalimabe</p></td>			<td colspan="1" rowspan="1"><p>1924598-82-2</p></td>		</tr>		<tr>			<td colspan="1" rowspan="1"><p>9</p></td>			<td colspan="1" rowspan="1"><p>12815</p></td>			<td colspan="1" rowspan="1"><p>amidoctenilsuccinato de s&oacute;dio</p></td>			<td colspan="1" rowspan="1"><p>66829-29-6</p></td>		</tr>		<tr>			<td colspan="1" rowspan="1"><p>10</p></td>			<td colspan="1" rowspan="1"><p>12816</p></td>			<td colspan="1" rowspan="1"><p>cera microcristalina</p></td>			<td colspan="1" rowspan="1"><p>63231-60-7</p></td>		</tr>		<tr>			<td colspan="1" rowspan="1"><p>11</p></td>			<td colspan="1" rowspan="1"><p>12817</p></td>			<td colspan="1" rowspan="1"><p>octanoato cetoar&iacute;lico</p></td>			<td colspan="1" rowspan="1"><p>90411-68-0</p></td>		</tr>		<tr>			<td colspan="1" rowspan="1"><p>12</p></td>			<td colspan="1" rowspan="1"><p>12818</p></td>			<td colspan="1" rowspan="1"><p>cloridrato de solrianfetol</p></td>			<td colspan="1" rowspan="1"><p>178429-65-7</p></td>		</tr>		<tr>			<td colspan="1" rowspan="1"><p>13</p></td>			<td colspan="1" rowspan="1"><p>12819</p></td>			<td colspan="1" rowspan="1"><p>elafibranor</p></td>			<td colspan="1" rowspan="1"><p>923978-27-2</p></td>		</tr>		<tr>			<td colspan="1" rowspan="1"><p>14</p></td>			<td colspan="1" rowspan="1"><p>12820</p></td>			<td colspan="1" rowspan="1"><p>etrasimode</p></td>			<td colspan="1" rowspan="1"><p>1206123-37-6</p></td>		</tr>		<tr>			<td colspan="1" rowspan="1"><p>15</p></td>			<td colspan="1" rowspan="1"><p>12821</p></td>			<td colspan="1" rowspan="1"><p>etrasimode arginina</p></td>			<td colspan="1" rowspan="1"><p>1206123-97-8</p></td>		</tr>		<tr>			<td colspan="1" rowspan="1"><p>16</p></td>			<td colspan="1" rowspan="1"><p>12822</p></td>			<td colspan="1" rowspan="1"><p>rabeprazol s&oacute;dico hidratado</p></td>			<td colspan="1" rowspan="1"><p>891191-56-3</p></td>		</tr>		<tr>			<td colspan="1" rowspan="1"><p>17</p></td>			<td colspan="1" rowspan="1"><p>12823</p></td>			<td colspan="1" rowspan="1"><p>Fragaria vescaL.</p></td>			<td colspan="1" rowspan="1"><p>[Ref. 13]</p></td>		</tr>		<tr>			<td colspan="1" rowspan="1"><p>18</p></td>			<td colspan="1" rowspan="1"><p>12824</p></td>			<td colspan="1" rowspan="1"><p>Plantago lanceolataL.</p></td>			<td colspan="1" rowspan="1"><p>[Ref. 13]</p></td>		</tr>		<tr>			<td colspan="1" rowspan="1"><p>19</p></td>			<td colspan="1" rowspan="1"><p>12825</p></td>			<td colspan="1" rowspan="1"><p>edotreotida (68 Ga)</p></td>			<td colspan="1" rowspan="1"><p>459831-08-4</p></td>		</tr>	</tbody></table><p style="text-align: center;"><br><b>ANEXO II - DENOMINA&Ccedil;&Otilde;ES DA LISTA DE DCB QUE SOFRERAM ALTERA&Ccedil;&Otilde;ES</b><br>&nbsp;</p><table border="1" cellpadding="1" cellspacing="0" width="100%">	<tbody>		<tr>		</tr>		<tr>			<td colspan="3" rowspan="1"><p>De:</p></td>			<td colspan="3" rowspan="1"><p>Para:</p></td>			<td colspan="1" rowspan="1"><p>Justificativa</p></td>		</tr>		<tr>			<td colspan="1" rowspan="1"><p>N&ordm; DCB</p></td>			<td colspan="1" rowspan="1"><p>DENOMINA&Ccedil;&Atilde;O COMUM BRASILEIRA</p></td>			<td colspan="1" rowspan="1"><p>CAS</p></td>			<td colspan="1" rowspan="1"><p>N&ordm; DCB</p></td>			<td colspan="1" rowspan="1"><p>DENOMINA&Ccedil;&Atilde;O COMUM BRASILEIRA</p></td>			<td colspan="1" rowspan="1"><p>CAS</p></td>			<td colspan="1" rowspan="1">&nbsp;</td>		</tr>		<tr>			<td colspan="1" rowspan="1"><p>10644</p></td>			<td colspan="1" rowspan="1"><p>macroagregado de albumina</p></td>			<td colspan="1" rowspan="1"><p>70536-17-3</p></td>			<td colspan="1" rowspan="1"><p>10644</p></td>			<td colspan="1" rowspan="1"><p>macrosalbe</p></td>			<td colspan="1" rowspan="1"><p>70536-17-3</p></td>			<td colspan="1" rowspan="1"><p>adequa&ccedil;&atilde;o da nomenclatura</p></td>		</tr>	</tbody></table><br><p style="font-weight: bold;">PUB D.O.U., 26/02/2024 - Se&ccedil;&atilde;o 1</p></p>
+					<p style="font-size: 0.8rem; text-align: center; font-style: italic; color: red;">Este texto n„o substitui a PublicaÁ„o Oficial.</p>
+				</div>
+			</div>
+		</article>
+                    	
+		<form name="formPdf" id="formPdf" action="/action/ActionDatalegis.php?acao=gerarPdfAto&cod_modulo=310&cod_menu=9882" method="post" target="_new">
+			<input type="hidden" name="html" id="html" value="" />
+		</form>
+		<form name="formImprimir" id="formImprimir" action="/action/ActionDatalegis.php?acao=imprimirAto&cod_modulo=310&cod_menu=9882" method="get" target="_new">
+			<input type="hidden" name="html" id="html" value="" />
+		</form>
+		<form name="formGerarLink" id="formGerarLink" action="/action/ActionDatalegis.php?acao=setGerarLink&cod_modulo=310&cod_menu=9882" method="get" target="_self">
+			<input type="hidden" name="html" id="html" value="" />
+		</form>
+		
+	</div>
+</div>
+		
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery@1.11/dist/jquery.min.js"></script>
+<script type="text/javascript" src="/view/js/ajax.js"></script> 
+<script type="text/javascript">
+
+	function abreFecha(obj) {
+		if($(obj).is(':visible') ) {
+			$(obj).removeClass('d-block').addClass('d-none');
+		} else {
+			$(obj).removeClass('d-none').addClass('d-block');
+		}
+	}
+	
+	var in_abrir_segundo_nivel = "";
+	var in_abrir_todas_notas = false;
+	
+	function recuperarObjetoPai(obj, nuascendentes) {
+		var objPai = obj;
+	
+		for ( var i = 0; i < nuascendentes; i++) {
+			objPai = objPai.parentNode;
+		}
+	
+		return objPai;
+	}
+	
+	function historico(psLink) {
+		var root;
+		root = window.open(psLink,'Historico','width=360,height=240,toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=no,copyhistory=no');
+		root.focus();
+	}
+		
+	function mostra_arquivo(cod, tip, acao, txt, l, a) {
+		var url;
+		var str;
+		if (cod != "") {
+			caminho = "http://www.datalegis.inf.br/datalegis/arquivos/";
+			switch (acao) {
+			case 1: //-- mostra arquivo na tela - apenas imagens
+				document.write("<img src='" + caminho + cod + "." + tip
+						+ "' border='0' width='" + ((l) ? l : "100%")
+						+ "' heigth='" + ((a) ? a : "100%") + "'>");
+				break;
+			case 0: //-- nao mostra arquivo na tela - para todos os tipos
+				document.write("<a href='" + caminho + cod + "." + tip
+						+ "' target='new'>" + txt + "</a>");
+				break;
+			}
+		}
+	}
+
+	function LinkTexto(psSigla, psNumero, psSeq, psAno, psOrgao, psCodTipo, psDesItem, pDesItemFim) {
+		var link = "/action/ActionDatalegis.php?acao=abrirTextoAto&link=S&tipo="
+			+ psSigla + "&numeroAto=" + psNumero + "&seqAto=" + psSeq + "&valorAno=" + psAno + "&orgao=" + psOrgao 
+			+ "&codTipo=" + psCodTipo + "&desItem=" + psDesItem + "&desItemFim=" + pDesItemFim
+			+ "&cod_modulo=310&cod_menu=9882";
+		window.open(link, '_blank');		
+	}
+
+	$(function() {
+    	$(document).ajaxStart(function(){
+    		$('#loading').show();
+        })
+        .ajaxStop(function(){
+        	$('#loading').delay(100).hide();
+        	in_abrir_todas_notas = false;
+        });
+
+	});
+
+	$(document).on('click', "a[href*='javascript:LinkNota']", function(e) {
+
+		//e.isImmediatePropagationStopped();
+		e.preventDefault();
+		var objHref = $(this);
+	    var parameter = objHref.attr('href')
+	    	.replace(/(\r\n|\n|\r)/gm, "")
+	    	.replaceAll(' ','')
+	    	.replaceAll('javascript:LinkNota(','')
+	    	.replaceAll(')','')
+	    	.replaceAll("'",'');
+	    
+	    var parameters = parameter.split(",");
+	    
+        var psSigla = parameters[0];
+        var psNumero = parameters[1];
+        var psSeq = parameters[2];
+        var psAno = parameters[3];
+        var psOrgao = parameters[4];
+        var psCodTipo = parameters[5];
+        var psDesItem = parameters[6];
+        var psSeqNota = parameters[7];
+
+        var link = "/action/ActionDatalegis.php?acao=detalharNotaAjax&tipo="+ psSigla+ 
+		"&numeroAto="+ psNumero+ "&seqAto="+ psSeq+ "&valorAno=" +psAno+ 
+		"&orgao="+ psOrgao+ "&codTipo="+ psCodTipo + "&desItem=" + psDesItem + "&seqNota=" + psSeqNota+
+		"&cod_modulo=310&cod_menu=9882";
+		
+        var idAto =(psSigla+psNumero+psSeq+psAno+psOrgao+psCodTipo+psDesItem+psSeqNota).replaceAll('.','').replaceAll('/','').replaceAll(',','').replaceAll('-','');
+        $(objHref).attr('class', 'ato-'+idAto);
+		var divNota = $(this).siblings('div.'+idAto+':first');
+		
+        if(!$(divNota).length) {		        
+    	  	$.ajax({
+    	        url: link,
+    	        dataType: "text",
+    	        async: true,
+    	        cache: true,
+    	        success: function(html) {
+					$(objHref).parent("em:first").append(html);
+    	        },
+    	        error: function(obj) {
+    	            console.log(obj);
+    	        }
+    	    });
+		} else {
+			$(divNota).toggle();
+		}
+	});
+	
+	function abrirTodosLinkNota() {
+		in_abrir_todas_notas = true;
+		$('div.nota-revogado').show();
+		$('#texto-compilado').css('text-decoration','none');
+		$('#texto-notas').css('text-decoration','underline');
+		var searchLinkNota = "a[href*='javascript:LinkNota']";
+		
+		var linkBase = "/action/ActionDatalegis.php?acao=detalharNotasListaAjax&cod_modulo=310&cod_menu=9882";
+		var linkAjax = '';
+		var registroChamado = 0;
+		var registroChamadoTotal = 0;
+		var registroTotal = $(searchLinkNota).length;
+		var indexInicialChamado = null;
+		
+		$(searchLinkNota).each(function( index ) {
+			if(registroChamado == 0) {
+				linkAjax = '';
+				indexInicialChamado = index;
+			}
+
+			registroChamado++;
+			registroChamadoTotal++;
+			
+			var objHref = $(this);
+			var parameter = objHref.attr('href')
+	    	.replace(/(\r\n|\n|\r)/gm, "")
+	    	.replaceAll(' ','')
+	    	.replaceAll('javascript:LinkNota(','')
+	    	.replaceAll(')','')
+	    	.replaceAll("'",'');
+	    	
+    	    var parameters = parameter.split(",");
+    	    
+            var psSigla = parameters[0];
+            var psNumero = parameters[1];
+            var psSeq = parameters[2];
+            var psAno = parameters[3];
+            var psOrgao = parameters[4];
+            var psCodTipo = parameters[5];
+            var psDesItem = parameters[6];
+            var psSeqNota = parameters[7];
+
+            var idAto =(psSigla+psNumero+psSeq+psAno+psOrgao+psCodTipo+psDesItem+psSeqNota).replaceAll('.','').replaceAll('/','').replaceAll(',','').replaceAll('-','');
+            var idDivNota = 'ato-'+idAto+'-'+index;
+            $(objHref).attr('class', idDivNota);
+
+            var divNota = $('a.'+idDivNota).siblings('div.'+idAto+':first');
+			
+			if(!$(divNota).length) {
+                linkAjax += "&sgl_tipo[]="+psSigla+"&num_ato[]="+psNumero+"&seq_ato[]="+psSeq+"&vlr_ano[]="+psAno+"&sgl_orgao[]="+psOrgao;
+                linkAjax += "&cod_tipo[]="+psCodTipo+"&des_item[]="+psDesItem+"&seq_nota[]="+psSeqNota+"&index_js[]="+index;
+			}
+			
+            if((registroChamado == 100 || registroChamadoTotal == registroTotal) && linkAjax.length > 0) {
+            	registroChamado = 0;
+                     	
+            	$.ajax({
+        	        url: linkBase,
+        	        type: "POST",
+        	        data: linkAjax,
+        	        dataType: "json",
+        	        async: true,
+        	        cache: true,
+        	        success: function(jsonObj) {        				
+        				$.each(jsonObj, function(index, objNota) {
+        					divNota = $('a.ato-'+objNota.ID_NOTA+'-'+objNota.INDEX).siblings('div.'+objNota.ID_NOTA+':first');
+        					
+        					if(!$(divNota).length) {
+        						var objetoDestino = $('a.ato-'+objNota.ID_NOTA+'-'+objNota.INDEX).parent("em:first");
+            					$( "<div/>", {
+            					    "class": "well nota-revogado "+objNota.ID_NOTA,
+            					    html: objNota.NOTAS.join('')
+            					  }).appendTo(objetoDestino);
+        			        } else {
+        			        	$(divNota).show();
+        			        }
+        				});
+        	        },
+        	        error: function(obj) {
+        	            console.log(obj);
+        	        }
+        	    });
+			}
+		});
+	}
+	
+	function fecharTodosLinkNota() {
+		$('#texto-compilado').css('text-decoration','underline');
+		$('#texto-notas').css('text-decoration','none');
+		in_abrir_todas_notas = false;
+		$('div.nota-revogado').hide();
+	}
+	
+	function LinkNota(psSigla, psNumero, psSeq, psAno, psOrgao, psCodTipo, psDesItem, psSeqNota) {
+	}
+
+	function gravarArquivo(psSigla, psNumero, psSeq, psAno, psOrgao, psCodTipo, psDesItem, psDesItemFim) {
+		var link = "/action/detalhaAto.do?method=gravarAtoPDF&tipo="
+				+ psSigla
+				+ "&numeroAto="
+				+ psNumero
+				+ "&seqAto="
+				+ psSeq
+				+ "&valorAno="
+				+ psAno
+				+ "&orgao="
+				+ psOrgao
+				+ "&codTipo="
+				+ psCodTipo + "&desItem=" + psDesItem + "&desItemFim=" + psDesItemFim;
+		root = window.open(link, 'Imprimir', 'width=766,height=600,toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=yes,copyhistory=no');
+	}
+	
+	function abrirFrame(id, obj){
+		fAscendentes = "";
+	
+		var l_div = obj;
+		if (l_div.getElementsByTagName('div')[0].style.display == "none" || l_div.getElementsByTagName('div')[0].style.display == ""){
+			var l_frame = l_div.getElementsByTagName("iframe")[0];
+			var link = "/action/TematicaAction.php?acao=visualizarTextoAtosVinculados&codigo=" + id + "&word="+fAscendentes;
+	
+			l_div.getElementsByTagName("span")[0].style.backgroundPosition = "0px -9px";
+			l_div.getElementsByTagName('div')[0].style.display = "block";
+			l_frame.src = link;
+		}else {
+			l_div.getElementsByTagName("span")[0].style.backgroundPosition = "0px 3px";
+			l_div.getElementsByTagName('div')[0].style.display = "none";
+		}
+	}
+	
+	function retira_acentos(palavra) {
+		var com_acento = '·‡„‚‰ÈËÍÎÌÏÓÔÛÚıÙˆ˙˘˚¸Á¡¿√¬ƒ…» ÀÕÃŒœ”“’÷‘⁄Ÿ€‹«';
+		var sem_acento = 'aaaaaeeeeiiiiooooouuuucAAAAAEEEEIIIIOOOOOUUUUC';
+		var nova='';
+	
+		for(var i = 0; i < palavra.length; i++) {
+			var p = com_acento.indexOf(palavra.substr(i,1));
+			
+			if (p > -1) {
+				nova += sem_acento.substr(p,1);
+			}else {
+				nova += palavra.substr(i,1);
+			}
+		}
+		return nova;
+	}
+		
+	function expandir(pObj, nuAscendentes) {
+		l_div = recuperarObjetoPai(pObj, nuAscendentes);
+		l_div_aps = l_div.getElementsByTagName('div')[0];
+	
+		if (l_div_aps.style.display == "" || l_div_aps.style.display == "block") {
+			//setarClassColapse();
+			setarPropriedadeDisplay(l_div_aps, "none");
+			pObj.style.backgroundPosition = "0px 3px";
+		} else {
+			pObj.style.backgroundPosition = "0px -9px";
+			l_div_aps.innerHTML = "<div style='font-size: 8pt; margin-left: 21px;'>Carregando...</div>";
+			setarPropriedadeDisplay(l_div_aps, "block");
+	
+			buscarFilhos('', "");
+		}
+	}
+	
+	function buscarFilhos(filtro, dshierarquia) {
+		var params = null;
+		processarAjax('/action/TematicaAction.php?acao=montarEstruturaTitulos&cotematica=' + l_div.getAttribute("codigo")+
+					  "&notematica="+filtro+"&nivel="+1+"&infiltro="+l_div.getAttribute("inFiltro"), 'POST', params, mostrarFilhos);
+	}
+	
+	function setarPropriedadeDisplay(pObj, pDisplay) {
+		pObj.style.display = pDisplay;
+	}
+	
+	function mostrarFilhos(pRetorno) {
+		var indice = '';
+	
+		l_div_aps.innerHTML = pRetorno;
+		setarPropriedadeDisplay(l_div_aps, "block");
+		
+		if (in_abrir_segundo_nivel == "S"){
+			in_abrir_segundo_nivel = "N";
+	
+			expandir(document.getElementById('treeviewDetalhe00').getElementsByTagName('span')[0], 1);
+		}
+	}
+
+	function pdf() {
+		$('#formPdf #html').val($('div.ato').html());
+		$('#formPdf').submit();
+	}
+
+	function imprimir() {
+		//window.location.href = window.location.href + '&print=S';
+		window.print();
+	}
+
+	function tags(num_ato,sgl_tipo,sgl_orgao,vlr_ano,seq_ato) {
+		var link = "/action/ActionDatalegis.php?acao=visualizarTagsAto&sgl_tipo="+sgl_tipo+
+			"&num_ato="+num_ato+"&seq_ato="+seq_ato+"&vlr_ano="+vlr_ano+"&sgl_orgao="+sgl_orgao+
+			"&cod_modulo=310&cod_menu=9882";
+		root = window.open(link,'Tags','width=640,height=190,toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=yes,copyhistory=no');
+	}
+	
+	var tam = 1.125;
+	function mudaFonte(tipo) {
+		if (tipo == 'mais') {
+			if(tam < 2) tam += 0.2;	
+		} else {
+			if(tam > 0.8) tam -= 0.2;
+		}
+
+		$("#conteudo p, #conteudo a, #conteudo span").css('font-size', tam + 'rem');
+		$("#conteudo div").css('font-size', (tam + 0.2) + 'rem');
+	}
+
+	</script>
+<script type="text/javascript" src="/v2/js/jquery-1.11.0.min.js"></script>
+<script type="text/javascript" src="/v2/js/jquery.cookie-1.4.1.min.js"></script>
+<script type="text/javascript" src="/v2/js/chosen.jquery-0.1.1.min.js"></script>
+<script type="text/javascript" src="/v2/js/jquery.validate.min.js"></script>
+<script type="text/javascript" src="/v2/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="/v2/js/sistema.js?20260912"></script>
+<script type="text/javascript" async src="/view/js/copytoclipboard.js?20260912"></script>
+<script type="text/javascript" async src="https://cdn.ampproject.org/v0.js"></script>
+<div class="noprint" id="loading" style="position: fixed; top: 0; bottom: 0; right: 0; left: 0; width: 100vw; height: 100vh; background: black; opacity: 25%; z-index: 5001; padding-top: 20%; display:none;">
+	<center style="z-index: 5002; color: white; font-weight: 400;">
+		<img style="margin-top: -8px" src="../view/img/Loading.gif" alt="loading" /> Carregando...
+	</center>
+</div>
+<div vw class="enabled">
+    <div vw-access-button class="active"></div>
+    <div vw-plugin-wrapper>
+        <div class="vw-plugin-top-wrapper"></div>
+    </div>
+</div>
+<script src="https://vlibras.gov.br/app/vlibras-plugin.js" charset="UTF-8"></script>
+<script>
+    new window.VLibras.Widget('https://vlibras.gov.br/app');
+</script>
+</body>
+</html>
