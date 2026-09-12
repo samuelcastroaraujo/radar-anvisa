@@ -480,13 +480,47 @@ Confirmado com o ano de 1996 (62 atos reais = 50 na página 1 + 12 na página
 2). Implementado em `AnvisaLegisClient.atos_revogados_do_ano` — ver
 `app/ingest/anvisalegis.py`.
 
+## Addendum M5 — módulo 630 (Consultas Públicas), resolvido
+
+`abrirLegislacao&cod_menu=9797` lista dezenas de sub-cod_menu — o que
+importa pro "CPs abertas com prazo" (seção 9, `/consultas-publicas`) é:
+
+- `abrirResenhaAno&cod_modulo=630&cod_menu=9789` = **"CONSULTA PÚBLICA
+  ATIVA (19)"** — bate exato com os "19 CP abertas" do enunciado original.
+  Mesmo formato `<article class="ato">` do módulo 310, com `tipo=CPB` no
+  `href` de `abrirTextoAto`.
+- A página de **cada CP individual** (`abrirTextoAto&tipo=CPB&...`) é bem
+  mais estruturada que a de uma norma comum — tudo com `id` de elemento
+  fixo, fácil de parsear sem regex chumbado no texto corrido:
+  - `#dataDou` — data de publicação no DOU
+  - `#status` — texto livre (ex.: "Aberto a contribuições")
+  - `#prazoContribuicao` — **o prazo, no formato "DD/MM/AAAA a DD/MM/AAAA"**
+    (início e fim da janela de contribuição)
+  - `#prorrogacaoPrazo` — nova data-fim, se a CP foi prorrogada (vazio
+    quando não houve prorrogação)
+  - `#assunto` — a "ementa" da consulta
+  - `#situacao` — texto da motivação/contexto (mais longo, tipo um resumo)
+  - link para o PDF integral em `https://anexosportal.datalegis.net/arquivos/...`
+
+Outros cod_menu do módulo 630 mapeados de verdade (rótulo exato do
+portal), pra referência futura caso o produto queira cobrir mais que só
+consulta pública: `9374` Audiências Públicas ativas (na verdade o rótulo
+"ativa" é o `9787`, com 1 aberta), `9387`/`9390`/`9391`/`9393` são outros
+mecanismos de participação (Diálogos Setoriais, e-Participa, Consultas de
+Revisão de Guia, Consultas Regionais ICH) — nenhum ingerido no M5, só
+documentado aqui pra não precisar redescobrir depois.
+
+Decisão do M5: guarda consulta pública na tabela `noticia`
+(`categoria='consulta_publica'`), que é pra isso que o enunciado do
+schema já previa essa categoria — só que sem coluna de prazo. Extensão
+não-destrutiva do schema: `noticia.prazo_inicio`/`prazo_fim` (ver
+`supabase/migrations/0003_participacao_social.sql`).
+
 ## Resumo do que ficou pendente (nada foi inventado além disto)
 
 1. **`informes-de-seguranca`**: mudou para SPA em `consultas.anvisa.gov.br`;
    API real por trás não foi mapeada. Decisão pendente do usuário (ver seção 2).
-2. **Módulo 630 (Consultas Públicas)**: falta abrir um item individual de CP
-   aberta para confirmar onde o "prazo" aparece no HTML.
-3. **Dados abertos**: catalogado só superficialmente (4 itens no nível
+2. **Dados abertos**: catalogado só superficialmente (4 itens no nível
    raiz), sem descer nas subpastas ainda.
 
 **Resolvido no M0 (INLABS):** testado de ponta a ponta com conta real
@@ -497,6 +531,10 @@ revogadas / 464 alteradoras / **291** retificadoras / **22** revogadoras —
 essas duas últimas invertidas em relação ao que constava aqui antes) foram
 confirmadas com requisição real e usadas para validar a carga histórica —
 ver Addendum M2 abaixo e o resultado final em `CLAUDE.md`.
+
+**Resolvido no M5:** módulo 630 (consultas públicas) — ver Addendum M5
+acima. Onde exatamente o "prazo" aparece (`#prazoContribuicao`) estava
+pendente desde o M0.
 
 Nenhum endpoint usado no código (a partir do M1) deve ir além do que está
 documentado e testado aqui. Qualquer ação nova (`acao=...`) encontrada durante
