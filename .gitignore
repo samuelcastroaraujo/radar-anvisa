@@ -1,0 +1,25 @@
+# segredos
+.env
+.env.*
+!.env.example
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+
+# node / frontend
+node_modules/
+.next/
+out/
+
+# dados baixados (não versionar conteúdo bruto de produção)
+data/raw/
+*.zip
+
+# so
+.DS_Store
+Thumbs.db

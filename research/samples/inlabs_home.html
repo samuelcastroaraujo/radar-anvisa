@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Imprensa Nacional - INLABS</title>
+
+	<link rel="stylesheet" href="css/bootstrap.min.css">
+	<script src="js/bootstrap.min.js"></script>
+	<link rel="icon" href="img/favicon.ico" type="image/x-icon" />
+	<link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" />
+	<meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<link rel="stylesheet" href="css/font-awesome.min.css"> 
+	<link rel="stylesheet" href="css/styles2.css"> 
+	<link rel="stylesheet" href="css/styles3.css">
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-149577637-4"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-149577637-4');
+</script>
+</head><body class="acessar">
+
+<div class="container">
+	<div class="row">
+		  <div class="col-12">
+			<div class="row">
+				<p class="col-12" style="text-align: center;"><a href="http://inlabs.in.gov.br/" title="INLABS - Imprensa Nacional" alt="INLABS - Imprensa Nacional" ><img src="img/inlabs-logo.png" style="width: 120px;"></a></p>
+				<h3 class="col-12" style="text-align: center;">Imprensa Nacional - INLABS</h3><br>	
+				<h4 class="col 12" style="text-align:center; color:red;"></h4><br>
+			</div>
+		  </div>
+		  <div class="col-12">
+			<p>Seja bem vindo ao Portal INLABS. </p>
+		  </div>
+	</div>
+  <div class="row">
+      <div class="col-6">
+        <h2>Registrar</h2>
+		        <form action="registrar.php" method="post">
+		<div class="form-group row">
+			  <label class="col-sm-4">E-mail (login) *: </label>
+			  <div class="col-sm-8">
+				<input type="text" id="email" name="email" class="form-control form-control-sm " value="" />
+			  </div>
+		</div>
+		<div class="form-group row">
+			  <label class="col-sm-4">Senha *: </label>
+			  <div class="col-sm-8">
+				<input type="password" id="password" name="password" class="form-control form-control-sm " /> 
+			</div>
+		</div>
+			  <div class="form-group row">
+				<label class="col-sm-4">Repita a senha *: </label>
+				<div class="col-sm-8">
+					<input type="password" id="password2" name="password2" class="form-control form-control-sm " /> 
+				</div>
+			   </div>
+		<div class="form-group row">
+			  <label class="col-sm-4">Nome Completo *: </label>
+			  <div class="col-sm-8">
+				<input type="text" id="nome_completo" name="nome_completo"  class="form-control form-control-sm  " value="" /> 
+		</div>
+		</div>
+		<div class="form-group row">
+			<label class="col-sm-4">Telefone (com DDD) : </label>
+			<div class="col-sm-8">
+				<input type="text" id="telefone" name="telefone"  class="form-control form-control-sm"  value="" /> 
+			</div>
+		</div>
+		<div class="form-group row">
+			<label class="col-sm-4">UF/Cidade *: </label>
+			<div class="col-sm-8">
+				<input type="text" id="uf_cidade" name="uf_cidade"  class="form-control form-control-sm  " value=""  /> 
+			</div>
+		</div>
+		<div class="form-group row">
+			<label class="col-sm-4">Nome Empresa: </label>
+			<div class="col-sm-8">
+				<input type="text" id="nome_empresa" name="nome_empresa"  class="form-control form-control-sm  "  value=""   />
+			</div>
+		</div>
+		<div class="form-group row">
+			<div class="col-sm-12">
+				<input class="btn btn-primary" type="submit" value="Cadastrar">
+			</div>
+		</div>
+        </form>
+      </div>
+      <div class="col-6">
+			<h2>Acessar</h2>
+			          <form action="logar.php" method="post">
+			<div class="form-group row">
+				<label class="col-sm-4">E-mail (login) *: </label>
+				<div class="col-sm-8">
+					<input type="text" id="email" name="email" class="form-control form-control-sm " />
+				</div>
+			</div>
+			<div class="form-group row">
+				<label class="col-sm-4">Senha *: </label>
+				<div class="col-sm-8">
+					<input type="password" id="password" name="password" class="form-control form-control-sm " />
+				</div>
+			</div>
+			<div class="form-group row">
+				<div class="col-sm-12">
+					<input class="btn btn-primary" type="submit" value="Logar">
+				</div>
+			</div>
+          </form>
+		  <h2>Esqueci a Senha</h2>
+			          <form action="esqueci.php" method="post">
+			<div class="form-group row">
+				<label class="col-sm-4">E-mail (login) *: </label>
+				<div class="col-sm-8">
+					<input type="text" id="email" name="email" class="form-control form-control-sm " />
+				</div>
+			</div>
+			<div class="form-group row">
+				<div class="col-sm-12">
+					<input class="btn btn-primary" type="submit" value="Esqueci a senha">
+				</div>
+			</div>
+          </form>
+		  
+      </div>
+  </div>
+  
+  <br />
+  <br />
+  <br />
+  <br />
+  <div class="disclaimer"><p class="small">Disclaimer: Este portal tem a finalidade de disponibilizar as informações publicadas no Diário Oficial da União em um formato próprio de dados abertos (XML), facilitando e fomentando o processamento dos dados publicados. É incentivado o envio de sugestões e críticas por parte dos interessados. Ressalta-se que o conteúdo disponibilizado em tal formato não substitui o publicado na versão certificada. Além disso, todo conteúdo disponibilizado neste portal em formato XML também estará disponível no Portal de Dados Abertos (www.dados.gov.br). Neste portal também são disponibilizados para download as publicações em formato PDF. As publicações são disponibilizadas diariamente, neste portal, momentos após a sua poblicação no portal da Imprensa Nacional (www.in.gov.br), exceto para as informações disponibilizadas em formato XML, que somente são disponibilizadas neste portal, nas condições informadas acima.</p></div>
+</div>
+<div id="feedbackbutton"><a target="_blank" href="https://docs.google.com/forms/d/1vckDswX0T0Zshz5Ny2GYMPiqa13Zg9KPoUnshYwGJPw/viewform" class="feedback">Dê sua opinião</a></div>
+
+</body>
+</html>
+
+

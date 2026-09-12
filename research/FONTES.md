@@ -285,30 +285,78 @@ Repositório oficial confirmado: `https://github.com/Imprensa-Nacional/inlabs`
 (sem autenticação), README e scripts baixados de verdade:
 `samples/inlabs_readme.md`, `samples/inlabs-auto-download-xml.py`.
 
-**Estrutura confirmada pelo script oficial** (`public/python/inlabs-auto-download-xml.py`):
+**Estrutura confirmada pelo script oficial** (`public/python/inlabs-auto-download-xml.py`)
+**e testada de ponta a ponta nesta sessão, com conta real do usuário**
+(credenciais em `.env`, nunca commitadas — `.env` está no `.gitignore`):
 
 - Login: `POST https://inlabs.in.gov.br/logar.php`
   body `application/x-www-form-urlencoded`: `email=...&password=...`
-  → resposta seta cookie `inlabs_session_cookie`.
-- Download: `GET https://inlabs.in.gov.br/index.php?p={YYYY-MM-DD}&dl={YYYY-MM-DD}-{SECAO}.zip`
-  com header `Cookie: inlabs_session_cookie=...` e `origem: 736372697074`
-  (hex de `"script"` em ASCII).
-  Seções possíveis: `DO1 DO2 DO3 DO1E DO2E DO3E`.
-- Resposta 404 se o arquivo daquele dia/seção não existir ainda.
+  → resposta seta cookie `inlabs_session_cookie`. **Confirmado**: o campo
+  precisa ser um e-mail de verdade (o form de cadastro em
+  `inlabs.in.gov.br/acessar.php` tem `email`, `password`, `nome_completo`,
+  `telefone`, `uf_cidade`, `nome_empresa` — é conta pessoal, não usuário
+  arbitrário). Um `email` que não é um e-mail real falha silenciosamente
+  (HTTP 200, mas sem `inlabs_session_cookie`, sem mensagem de erro visível).
+- **Pegadinha real encontrada:** `p={YYYY-MM-DD}` só funciona se aquela pasta
+  de fato existir no servidor. No momento do teste (2026-09-12), a pasta do
+  dia corrente **ainda não existia** (o DOU do dia só fica disponível mais
+  tarde) — pedir `p=2026-09-12` faz o servidor devolver **a página HTML do
+  diretório raiz** (HTTP 200, ~39 KB) em vez de um erro, o que pode ser
+  confundido com sucesso se só se checar o status code. **O ingestor real
+  precisa validar `Content-Type: application/octet-stream` (ou o magic byte
+  `PK` de ZIP) antes de aceitar o download, nunca só o HTTP 200.**
+  Com uma data existente (`p=2026-09-11&dl=2026-09-11-DO1.zip`) o download
+  funcionou: 3.959.655 bytes, `Content-Type: application/octet-stream`, zip
+  válido com 512 arquivos.
+- Header extra necessário: `origem: 736372697074` (hex de `"script"` em ASCII).
+- Seções confirmadas na listagem real de um dia (`?p=2026-09-11`, sem `dl`):
+  `DO1`, `DO1E`, `DO2`, `DO2E`, `DO3` (mais PDFs assinados por seção/anexo,
+  não necessários para o pipeline de texto).
 
 `inlabs.in.gov.br/robots.txt` → 404 (sem robots.txt publicado). Base `/` sem
-sessão → **302** (redirect de login), confirmando que exige autenticação, como
-o enunciado avisa.
+sessão → **302** (redirect de login), confirmando que exige autenticação.
 
-**PENDENTE (não fabricado): preciso de uma conta INLABS real** —
-`INLABS_EMAIL`/`INLABS_PASSWORD` — para testar de fato o fluxo de
-login+download e inspecionar o XML resultante (schema, filtro por órgão
-"Agência Nacional de Vigilância Sanitária", nomes de tag). Isso não pôde ser
-verificado nesta sessão de reconhecimento porque exige cadastro (gratuito, mas
-com e-mail real, fora do escopo de um teste automatizado sem intervenção do
-usuário). **Ação necessária do usuário:** criar a conta em
-https://www.gov.br/imprensanacional (ou onde o INLABS pedir) e fornecer
-e-mail/senha via `.env` antes do M5.
+### Schema do XML — confirmado com arquivo real
+
+Amostras em `samples/inlabs_extract/` (duas matérias reais da ANVISA, extraídas
+do DO1 de 11/09/2026, publicadas com nomes truncados como `515_20260911_<id>.xml`).
+
+```xml
+<xml><article id="51230339" name="resolucao_3547_2026 GGFIS" idOficio="12049893"
+  pubName="DO1" artType="Resolução" pubDate="11/09/2026"
+  artClass="..." artCategory="Ministério da Saúde/Agência Nacional de
+  Vigilância Sanitária/4ª Diretoria/Gerência-Geral de Inspeção e Fiscalização
+  Sanitária" artSize="12" numberPage="175"
+  pdfPage="http://pesquisa.in.gov.br/imprensa/jsp/visualiza/index.jsp?data=11/09/2026&amp;jornal=515&amp;pagina=175"
+  editionNumber="172" idMateria="24349152">
+  <body>
+    <Identifica><![CDATA[ RESOLUÇÃO-RE nº 3.547, DE 9 DE SETEMBRO DE 2026]]></Identifica>
+    <Data><![CDATA[]]></Data>
+    <Ementa />
+    <Texto><![CDATA[<p class="identifica">RESOLUÇÃO-RE nº 3.547...</p>...]]></Texto>
+  </body>
+  <Midias />
+</article></xml>
+```
+
+**Encoding:** arquivo é **UTF-8 com BOM** (`\xef\xbb\xbf` no início) — bem mais
+simples que o AnvisaLegis. Decodificar com `bytes.decode("utf-8-sig")`.
+Validado: `"Resolução"`, `"Vigilância Sanitária"` e
+`"Agência Nacional de Vigilância Sanitária"` saem corretos direto, sem
+nenhuma camada extra de entidades HTML.
+
+**Filtro confirmado por órgão:** filtrar por
+`artCategory` contendo literalmente `"Agência Nacional de Vigilância
+Sanitária"` (não usar um `"ANVISA"` genérico — no dia testado, 3 matérias de
+outros órgãos citavam "ANVISA" no corpo do texto sem serem da ANVISA; filtrar
+por substring solta em todo o XML gera falso positivo). No DO1 de 11/09/2026,
+com esse filtro correto: **14 matérias da ANVISA** em 512 arquivos do dia
+(tipos vistos: `Resolução` ×13, `Aresto` ×1).
+
+`Identifica` dá o cabeçalho formatado do ato (regex simples extrai
+tipo/número/ano dali), `Texto` traz o corpo em HTML (mesmas tags `<p>` do
+AnvisaLegis, mas aqui sem entidades — já é texto pronto), e `pdfPage` é um
+link público e estável para citar como fonte do DOU.
 
 A API de consulta do in.gov.br **não foi testada**, por instrução explícita
 (Cloudflare bot manager) — respeitado sem verificação adicional.
@@ -330,15 +378,16 @@ bloqueante para M1/M2.
 
 1. **`informes-de-seguranca`**: mudou para SPA em `consultas.anvisa.gov.br`;
    API real por trás não foi mapeada. Decisão pendente do usuário (ver seção 2).
-2. **INLABS**: fluxo de login/download só documentado via script oficial, não
-   executado de fato — falta conta real (`INLABS_EMAIL`/`INLABS_PASSWORD`).
-3. **Módulo 630 (Consultas Públicas)**: falta abrir um item individual de CP
+2. **Módulo 630 (Consultas Públicas)**: falta abrir um item individual de CP
    aberta para confirmar onde o "prazo" aparece no HTML.
-4. **Contagens 1.138 vigentes / 464 alteradoras / 291 revogadoras / 22
+3. **Contagens 1.138 vigentes / 464 alteradoras / 291 revogadoras / 22
    retificadoras**: só a de revogadas (2.438) foi confirmada textualmente no
    menu; as demais serão validadas por contagem real no M2.
-5. **Dados abertos**: catalogado só superficialmente (4 itens no nível
+4. **Dados abertos**: catalogado só superficialmente (4 itens no nível
    raiz), sem descer nas subpastas ainda.
+
+**Resolvido nesta rodada:** INLABS testado de ponta a ponta com conta real
+(login, download, unzip, filtro por `artCategory`, encoding) — ver seção 3.
 
 Nenhum endpoint usado no código (a partir do M1) deve ir além do que está
 documentado e testado aqui. Qualquer ação nova (`acao=...`) encontrada durante
