@@ -54,11 +54,14 @@ create table if not exists norma_relacao (
   tipo          text not null,   -- altera | revoga | revoga_parcial | retifica | regulamenta | substitui
   dispositivo   text,            -- "art. 5º, §2º"
   data_efeito   date,
-  fonte         text,
-  -- [M1] evita duplicar a mesma relação ao reprocessar o mesmo ato
-  -- (coalesce porque dispositivo pode ser nulo para relações "no ato inteiro").
-  unique (origem_id, destino_id, tipo, coalesce(dispositivo, ''))
+  fonte         text
 );
+
+-- [M1] evita duplicar a mesma relação ao reprocessar o mesmo ato (coalesce
+-- porque dispositivo pode ser nulo para relações "no ato inteiro" — e uma
+-- constraint UNIQUE de tabela não aceita expressão, só coluna, daí o índice).
+create unique index if not exists norma_relacao_unica_idx
+  on norma_relacao (origem_id, destino_id, tipo, coalesce(dispositivo, ''));
 
 -- Chunks para RAG
 create table if not exists chunk (
@@ -73,7 +76,16 @@ create table if not exists chunk (
   -- [M1] permite upsert idempotente ao re-chunkear uma norma que mudou.
   unique (norma_id, ordem)
 );
-create index if not exists chunk_embedding_idx on chunk using ivfflat (embedding vector_cosine_ops) with (lists = 200);
+-- [M1] ivfflat trava em 2000 dimensões (limite do pgvector) e o embedding
+-- é de 3072 (text-embedding-3-large) — confirmado ao aplicar a migration
+-- de verdade neste projeto Supabase (erro real:
+-- "column cannot have more than 2000 dimensions for ivfflat index").
+-- Solução do próprio pgvector para >2000 dims: indexar via HNSW sobre um
+-- cast para halfvec (metade da precisão só no índice; a coluna continua
+-- vector(3072) em precisão cheia). pgvector 0.8.2 confirmado disponível
+-- no projeto (suporta halfvec até 4000 dims).
+create index if not exists chunk_embedding_idx
+  on chunk using hnsw ((embedding::halfvec(3072)) halfvec_cosine_ops);
 create index if not exists chunk_tsv_idx on chunk using gin (tsv);
 
 -- Notícias, informes, alertas
