@@ -29,7 +29,11 @@ async def main() -> None:
         print("ERRO: DATABASE_URL não configurada (.env).", file=sys.stderr)
         raise SystemExit(1)
 
-    pool = await asyncpg.create_pool(dsn=settings.database_url, min_size=1, max_size=3)
+    # statement_cache_size=0 — ver comentário em app/db.py: obrigatório
+    # com o pooler do Supabase (Supavisor, modo transaction) em produção.
+    pool = await asyncpg.create_pool(
+        dsn=settings.database_url, min_size=1, max_size=3, statement_cache_size=0
+    )
     cliente = AnvisaLegisClient()
     job_id = await pool.fetchval(
         "insert into job_execucao (fonte, status) values "

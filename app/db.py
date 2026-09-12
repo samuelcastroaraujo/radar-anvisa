@@ -18,7 +18,15 @@ async def get_pool() -> asyncpg.Pool:
         settings = get_settings()
         if not settings.database_url:
             raise RuntimeError("DATABASE_URL não configurada (ver .env.example).")
-        _pool = await asyncpg.create_pool(dsn=settings.database_url, min_size=1, max_size=5)
+        # statement_cache_size=0: em produção o DATABASE_URL é o pooler do
+        # Supabase (Supavisor, modo transaction) — prepared statements do
+        # asyncpg colidem entre conexões físicas diferentes por trás do
+        # pooler (achado real fazendo o primeiro deploy: DuplicatePrepared
+        # StatementError). Sem custo relevante aqui (não é um hot loop de
+        # milhares de queries por segundo na mesma query).
+        _pool = await asyncpg.create_pool(
+            dsn=settings.database_url, min_size=1, max_size=5, statement_cache_size=0
+        )
     return _pool
 
 

@@ -78,7 +78,11 @@ async def main() -> None:
 
     ano = int(sys.argv[1]) if len(sys.argv) > 1 else (datetime.now(UTC) + FUSO_BRT).year
 
-    pool = await asyncpg.create_pool(dsn=settings.database_url, min_size=1, max_size=3)
+    # statement_cache_size=0 — ver comentário em app/db.py: obrigatório
+    # com o pooler do Supabase (Supavisor, modo transaction) em produção.
+    pool = await asyncpg.create_pool(
+        dsn=settings.database_url, min_size=1, max_size=3, statement_cache_size=0
+    )
     cliente = GovBrClient()
     job_id = await pool.fetchval(
         "insert into job_execucao (fonte, status) values "

@@ -183,8 +183,13 @@ async def main(so_vigentes: bool, so_revogadas: bool) -> None:
         print("ERRO: DATABASE_URL não configurada (.env).", file=sys.stderr)
         raise SystemExit(1)
 
+    # statement_cache_size=0 — ver comentário em app/db.py: obrigatório
+    # com o pooler do Supabase (Supavisor, modo transaction) em produção.
     pool = await asyncpg.create_pool(
-        dsn=settings.database_url, min_size=2, max_size=CONCORRENCIA_GRAVACAO
+        dsn=settings.database_url,
+        min_size=2,
+        max_size=CONCORRENCIA_GRAVACAO,
+        statement_cache_size=0,
     )
     cliente = AnvisaLegisClient()
     cache: NormaIdCache = {}

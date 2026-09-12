@@ -46,7 +46,11 @@ async def main(limite: int | None) -> None:
         print("ERRO: OPENROUTER_API_KEY não configurada (.env).", file=sys.stderr)
         raise SystemExit(1)
 
-    pool = await asyncpg.create_pool(dsn=settings.database_url, min_size=2, max_size=8)
+    # statement_cache_size=0 — ver comentário em app/db.py: obrigatório
+    # com o pooler do Supabase (Supavisor, modo transaction) em produção.
+    pool = await asyncpg.create_pool(
+        dsn=settings.database_url, min_size=2, max_size=8, statement_cache_size=0
+    )
     inicio = time.monotonic()
 
     job_id = await pool.fetchval(

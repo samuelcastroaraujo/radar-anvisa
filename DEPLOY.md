@@ -72,14 +72,29 @@ onde indicado):
 | `RESEND_API_KEY` | opcional | ver seção 3 |
 | `TELEGRAM_BOT_TOKEN` | opcional | ver seção 3 |
 
-**Nota sobre `DATABASE_URL`**: em produção, prefira a connection string do
-**pooler** do Supabase (Project Settings → Database → Connection Pooling,
-modo "Transaction", porta `6543`) em vez da conexão direta (porta `5432`).
-O motivo: o scheduler roda os 5 scripts diários como subprocessos, cada um
-abrindo seu próprio pool `asyncpg` (até 3 conexões) **além** do pool da
-própria API (até 5) — em uso normal isso fica bem abaixo do limite do
-Supabase, mas o pooler é a prática recomendada pra qualquer app que não
-seja um script de uma execução só.
+**Nota sobre `DATABASE_URL` — não é opcional no Railway.** A conexão
+direta do Supabase (`db.<ref>.supabase.co:5432`) só resolve em **IPv6**
+hoje em dia, e o Railway não tem saída IPv6 — o deploy sobe, mas o
+`/health` trava em "Network is unreachable" ao tentar abrir o pool.
+Confirmado tentando de verdade no primeiro deploy deste projeto. Use a
+connection string do **pooler** (Supabase → seu projeto → **Connect** →
+aba **"Transaction pooler"**), formato:
+
+```
+postgresql://postgres.<PROJECT-REF>:<SENHA>@aws-<0-ou-1>-<região>.pooler.supabase.com:6543/postgres
+```
+
+A região (`aws-0-us-west-2`, `aws-0-sa-east-1`, etc.) é a mesma que
+aparece em **Project Settings → General → Region**.
+
+**E, junto com o pooler, uma segunda mudança obrigatória no código**: o
+Supavisor (pooler do Supabase) roda em modo "transaction", que não
+suporta os *prepared statements* que o `asyncpg` usa por padrão — sem
+ajuste, toda query dá `DuplicatePreparedStatementError` (também só
+apareceu rodando de verdade contra o pooler, não em teste local com
+conexão direta). Por isso todo `asyncpg.create_pool(...)` do projeto passa
+`statement_cache_size=0` — já corrigido no código, nada que você precise
+fazer, só documentado aqui pra explicar por que esse parâmetro existe.
 
 ### 2.3. Deploy
 
@@ -217,7 +232,10 @@ real (ex.: "A RDC 27/2010 ainda está vigente?") e confira `/timeline` e
   então rodar manualmente uma vez cobre o que ficou pra trás).
 - **CORS** — não precisa configurar nada no backend; o frontend nunca fala
   com o Railway direto do browser (ver arquitetura no topo deste arquivo).
-- **Erro de conexão com o Postgres sob carga** — troque `DATABASE_URL`
-  pra connection pooling do Supabase (seção 2.2).
+- **`Network is unreachable` no `/health`** — `DATABASE_URL` está com a
+  conexão direta (IPv6-only); troque pro pooler (seção 2.2).
+- **`DuplicatePreparedStatementError` em qualquer endpoint que usa o
+  banco** — só acontece se algum `asyncpg.create_pool` novo no código
+  esquecer `statement_cache_size=0` (obrigatório com o pooler).
 - **Canal email só entrega pra você mesmo** — modo sandbox da Resend (ver
   seção 3.2); verifique um domínio pra liberar outros destinatários.
