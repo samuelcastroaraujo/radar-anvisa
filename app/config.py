@@ -22,6 +22,12 @@ class Settings(BaseSettings):
     # LLM / Embeddings
     anthropic_api_key: str = ""
     openai_api_key: str = ""
+    # Embeddings via OpenRouter (proxy compatível com a API da OpenAI) —
+    # decisão do M3, ver CLAUDE.md: chave real disponível era da OpenRouter,
+    # não da OpenAI direto. Modelo usado (openai/text-embedding-3-large,
+    # dim 3072) é o mesmo pedido no briefing, só o gateway muda.
+    openrouter_api_key: str = ""
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
 
     # INLABS (Imprensa Nacional / DOU) — conta pessoal, ver research/FONTES.md
     inlabs_email: str = ""

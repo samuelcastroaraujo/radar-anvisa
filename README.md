@@ -75,8 +75,12 @@ docker run --env-file .env -p 8000:8000 radar-anvisa
 
 ## Status
 
-M1 (esqueleto) e M2 (ingestão do módulo 310 da ANVISA) prontos: a base de
-normas está populada de verdade no Supabase — 4.579 normas e quase 12 mil
-relações entre elas (quem altera, revoga, substitui quem), carregadas
-direto do AnvisaLegis. Ainda não há chat nem busca (isso é M3/M4). Detalhes
-de arquitetura, decisões e o relatório completo da carga em `CLAUDE.md`.
+M1, M2 e M3 prontos: a base de normas está populada de verdade no Supabase
+— 4.579 normas e quase 12 mil relações entre elas (quem altera, revoga,
+substitui quem), carregadas direto do AnvisaLegis, e mais de 27 mil trechos
+já com embedding e busca híbrida (vetorial + full-text) funcionando —
+testada com as próprias perguntas de exemplo do produto ("qual RDC rege
+rotulagem nutricional de suplemento alimentar" já responde certo, e norma
+revogada aparece corretamente marcada como revogada). Ainda não há chat
+com IA (isso é o M4). Detalhes de arquitetura, decisões e os relatórios
+completos em `CLAUDE.md`.

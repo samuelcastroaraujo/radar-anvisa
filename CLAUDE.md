@@ -199,6 +199,72 @@ alteradas por atos que carregamos, mas que a gente não crawleou como
 "primary" ainda — ficam registradas com o mínimo (tipo/número/ano) pra não
 perder a relação, prontas pra serem enriquecidas quando/se forem crawleadas.
 
+### M3 — Chunking + embeddings + busca híbrida
+- **Embeddings via OpenRouter, não OpenAI direto**: a chave disponível era
+  da OpenRouter (`sk-or-v1-...`), que expõe um proxy compatível com a API
+  da OpenAI. Testado de verdade: `openai/text-embedding-3-large` na
+  OpenRouter devolve exatamente 3072 dimensões, igual ao pedido no
+  briefing — só muda o gateway (`base_url` + chave), o SDK `openai` e o
+  modelo continuam os mesmos. `app/embeddings.py`.
+- `app/chunking.py`: divide por unidade jurídica via regex de fronteira
+  (`Art. N`, `ANEXO N`) — nunca corta um artigo no meio porque cada
+  unidade vira uma fatia só depois de já estar delimitada. Artigo/anexo
+  grande demais (>1.500 tokens, contados com `tiktoken` cl100k_base como
+  aproximação) é dividido por §/Parágrafo único/inciso romano.
+  **Bug pego com dado real**: dividir só por parágrafo em branco (sem
+  agrupar) transformou uma tabela de anexo grande (norma de 1966) em 1.451
+  fragmentos, a maioria com 2-3 tokens — inútil pra embedding. Corrigido
+  com agrupamento guloso (`_agrupar_gulosamente`) que junta partes
+  pequenas até ~1.500 tokens antes de virar chunk.
+- `app/chunk_store.py`: grava vetor sem a dependência `pgvector` — formata
+  como o literal de texto que o Postgres já entende (`'[0.1,...]'::vector`).
+  Usa `executemany` em vez de um insert por chunk: com dezenas de milhares
+  de chunks, uma ida à rede por linha seria o gargalo dominante do job
+  (rede até o Supabase, não CPU) — mesma lição do M2.
+- `app/busca.py`: híbrida de verdade (vetorial `<=>` sobre o cast pra
+  `halfvec` que indexa + full-text `plainto_tsquery('portuguese', …)`),
+  fundidas por Reciprocal Rank Fusion (k=60), filtros por tema/ano/
+  tipo_ato/status_vigencia. `scripts/busca_cli.py` é o "CLI de busca pra
+  validar qualidade antes de plugar o LLM" pedido no M3.
+- `scripts/busca_cli.py` precisou de `sys.stdout.reconfigure(encoding=
+  "utf-8")` — o console do Windows (cp1252) derruba o script na primeira
+  vez que tenta imprimir um caractere fora do cp1252 (não é só acento
+  saindo errado como no AnvisaLegis — aqui é `UnicodeEncodeError` de
+  verdade, sem esse reconfigure).
+- **Segundo bug pego só depois de rodar a carga inteira**: o corte bruto de
+  último recurso (`_cortar_bruto`, quando nem §/inciso/parágrafo dividem o
+  bloco) estimava ~4 caracteres/token — bom pra prosa comum, ruim pra
+  tabela de anexo densa em números/símbolos (tokeniza mais apertado). 561
+  chunks (2%) saíram com até 3.171 tokens, mais que o dobro do limite.
+  Corrigido cortando pela sequência real de tokens do `tiktoken` (encode →
+  fatia → decode), que garante o limite sempre, não estima. As 72 normas
+  afetadas foram reprocessadas (chunks antigos apagados e recriados).
+
+### Resultado final da carga de chunking + embeddings
+
+```
+1.129 normas com texto_integral → 27.355 chunks (média 316 tokens, máximo
+exatamente 1.500 — 0 chunks acima do limite depois da correção)
+Custo real (OpenRouter): ~US$ 1,70
+Tempo: ~30 min (carga completa) + reprocessamento dos 72 corrigidos
+```
+
+Validação de qualidade (`scripts/busca_cli.py`) com as próprias perguntas
+de exemplo do briefing:
+- *"rotulagem nutricional de suplemento alimentar"* → RDC 243/2018
+  ("Dispõe sobre os requisitos sanitários dos suplementos alimentares")
+  em 1º lugar, vigente. Resposta certa.
+- *"farmácia magistral boas práticas de manipulação"* → RDC 67/2007 em
+  1º lugar, **corretamente marcada como REVOGADA** — o requisito mais
+  crítico do projeto (nunca tratar norma revogada como vigente) já
+  funciona de ponta a ponta, da ingestão à busca.
+
+Pendência pequena e não-bloqueante: 20 de 2.595 normas revogadas (0,8%)
+têm `ementa` = "Série Histórica" em vez da ementa de verdade — um link de
+navegação da listagem que o parser do M2 pegou por engano em vez do `<p>`
+de ementa nesses casos específicos. Não afeta status_vigencia nem a busca
+em si (o texto do chunk continua correto), só o campo `ementa` exibido.
+
 ## Milestones (status)
 
 - [x] M0 — Reconhecimento das fontes.
@@ -206,7 +272,8 @@ perder a relação, prontas pra serem enriquecidas quando/se forem crawleadas.
       Docker, CI).
 - [x] M2 — Ingestão do módulo 310 (carga histórica + grafo de relações +
       status derivado). 4.579 normas, 11.848 relações no Supabase.
-- [ ] M3 — Chunking + embeddings + busca híbrida.
+- [x] M3 — Chunking + embeddings + busca híbrida. 27.355 chunks
+      embeddados, busca validada com as perguntas de exemplo do briefing.
 - [ ] M4 — Chat RAG (`/chat` + golden QA).
 - [ ] M5 — Tempo real (INLABS, RSS/notícias, módulo 630, scheduler, `/timeline`).
 - [ ] M6 — Frontend Next.js.
