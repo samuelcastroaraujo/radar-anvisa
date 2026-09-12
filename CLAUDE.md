@@ -44,6 +44,16 @@ research/
   samples/        # HTML/XML/JSON brutos coletados durante o M0, para
                    # referência de estrutura real (não são fixtures de teste)
 tests/
+frontend/         # Next.js (App Router) — M6, ver seção própria abaixo
+  src/
+    app/          # páginas (chat em `/`, `/timeline`, `/consultas-publicas`)
+                   # e o proxy `app/api/chat/route.ts`
+    components/   # `components/ui/*` (primitivas estilo shadcn, escritas à
+                   # mão — ver decisão do M6) + componentes de página
+    lib/
+      api.ts      # cliente do backend — só roda no servidor do Next.js
+      utils.ts    # `cn()` (clsx + tailwind-merge)
+      format.ts   # formatação de data/prazo em pt-BR
 ```
 
 ## Comandos
@@ -63,6 +73,11 @@ uv run pytest -q
 
 # aplicar o schema no Supabase (uma vez, ou a cada nova migration)
 psql "$DATABASE_URL" -f supabase/migrations/0001_schema.sql
+
+# frontend (M6) — com o backend rodando em localhost:8000
+cd frontend && npm install
+npm run dev            # http://localhost:3000
+npm run lint && npm run build   # o CI roda os dois
 ```
 
 `research/` está fora do escopo do ruff/mypy (`extend-exclude`/`exclude` no
@@ -386,6 +401,56 @@ validados contra o Supabase real. Pendente: backfill completo de notícias
 de anos anteriores (fica incremental, não bloqueia); vínculo DOU→norma só
 cobre os tipos que o módulo 310 já cataloga.
 
+### M6 — Frontend Next.js
+
+- **`npm install`/`npx create-next-app`/`npx shadcn init` batem num
+  bloqueio real deste ambiente**: um `~/.npmrc` de segurança (`allow-scripts
+  = ["@anthropic-ai/claude-code"]`) impede qualquer outro pacote de rodar
+  script de instalação. Resolvido sem enfraquecer a política — instalação
+  em duas etapas: primeiro `npm install --ignore-scripts` (nenhuma das
+  libs usadas aqui — Next, React, Tailwind v4, class-variance-authority,
+  clsx, tailwind-merge, lucide-react — precisa de postinstall pra
+  funcionar; confirmado rodando `next build`/`next dev` de verdade depois).
+- **`shadcn/ui` sem a CLI**: o `npx shadcn init`/`add` sempre dispara um
+  `npm install` interno sem `--ignore-scripts`, esbarrando no mesmo
+  bloqueio, sem flag pra contornar. Em vez de enfraquecer a política de
+  segurança do ambiente, os componentes (`button`, `card`, `badge`,
+  `input`) foram escritos à mão em `src/components/ui/`, seguindo a
+  convenção real do shadcn (Tailwind + `class-variance-authority` +
+  `cn()` local) — o `components.json` gerado antes do bloqueio foi
+  mantido como documentação do estilo (`base-nova`, `neutral`), então
+  `npx shadcn add <algo>` volta a funcionar sozinho se essa restrição for
+  relaxada no futuro.
+- **Arquitetura cliente/servidor**: o browser nunca fala com o FastAPI
+  direto. Server Components (`/timeline`, `/consultas-publicas`) chamam o
+  backend server-to-server via `src/lib/api.ts` (env `API_BASE_URL`, sem
+  `NEXT_PUBLIC_`, nunca vai pro bundle do cliente); o chat (que precisa de
+  interatividade) é um Client Component que fala só com
+  `app/api/chat/route.ts`, um proxy fino que roda no servidor do Next.js e
+  repassa pro FastAPI. Vantagem sobre expor o FastAPI direto ao browser:
+  **zero configuração de CORS no backend** (nada mudou em `app/main.py`) e
+  a URL/porta real do backend nunca aparece no bundle do cliente — mesmo
+  padrão que já vale em produção (Vercel → Railway são dois serviços
+  falando servidor-a-servidor).
+- **Next.js gera `AGENTS.md`/`CLAUDE.md` sozinho dentro de `frontend/`**
+  na primeira vez que roda (`next dev`/`build`) — colidiria com o
+  `CLAUDE.md` real da raiz do repo (que seguimos à risca aqui). Removido e
+  desligado via `agentRules: false` em `next.config.ts`.
+- Três páginas, todas testadas de ponta a ponta contra o backend real
+  (`uvicorn` local + `npm run dev`, não mock): chat (`/`, via `POST
+  /chat`), linha do tempo (`/timeline`, com filtro de janela 7/30/90/365
+  dias) e consultas públicas (`/consultas-publicas`, com toggle
+  abertas/todas e contagem de dias restantes calculada no cliente a
+  partir de `prazo_fim`). `status_vigencia` sempre com o mesmo badge
+  verde/vermelho (`NormaBadge`) em qualquer lugar que uma norma apareça —
+  é o requisito mais crítico do produto, não dá pra deixar como texto
+  solto em só um lugar.
+- Validado com perguntas reais através da stack inteira (browser →
+  Next.js → FastAPI → RAG → Postgres/LLM): "A RDC 27/2010 ainda está
+  vigente?" devolve a resposta certa (REVOGADA, badge vermelho) e "O que
+  diz a RDC 99999/2025?" devolve `normas: []` (zero alucinação) — os dois
+  testes mais críticos do projeto, agora também na camada visual.
+
 ## Milestones (status)
 
 - [x] M0 — Reconhecimento das fontes.
@@ -398,6 +463,6 @@ cobre os tipos que o módulo 310 já cataloga.
 - [x] M4 — Chat RAG (`/chat` + golden QA). 33/33 perguntas passando.
 - [x] M5 — Tempo real (INLABS, notícias gov.br, módulo 630, scheduler,
       `/timeline`, `/consultas-publicas`, `/health/fontes`).
-- [ ] M6 — Frontend Next.js.
+- [x] M6 — Frontend Next.js (chat, timeline, consultas públicas).
 - [ ] M7 — Alertas.
 - [ ] M8 (opcional) — Ponte com licitações.

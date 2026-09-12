@@ -8,6 +8,7 @@ __pycache__
 !.env.example
 tests
 research
+frontend
 .pytest_cache
 .mypy_cache
 .ruff_cache

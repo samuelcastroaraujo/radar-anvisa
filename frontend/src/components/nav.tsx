@@ -1,0 +1,41 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+import { cn } from "@/lib/utils";
+
+const LINKS = [
+  { href: "/", label: "Chat" },
+  { href: "/timeline", label: "Linha do tempo" },
+  { href: "/consultas-publicas", label: "Consultas públicas" },
+];
+
+export function Nav() {
+  const pathname = usePathname();
+
+  return (
+    <header className="border-b border-border">
+      <div className="mx-auto flex max-w-4xl items-center gap-6 px-4 py-3">
+        <span className="text-sm font-semibold tracking-tight">RADAR ANVISA</span>
+        <nav className="flex gap-1">
+          {LINKS.map((link) => {
+            const ativo = pathname === link.href;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={cn(
+                  "rounded-md px-3 py-1.5 text-sm transition-colors hover:bg-accent hover:text-accent-foreground",
+                  ativo ? "bg-accent text-accent-foreground" : "text-muted-foreground",
+                )}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+    </header>
+  );
+}

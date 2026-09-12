@@ -73,6 +73,18 @@ docker build -t radar-anvisa .
 docker run --env-file .env -p 8000:8000 radar-anvisa
 ```
 
+### Frontend
+
+Pré-requisito: Node 22+. Com o backend rodando em `localhost:8000`:
+
+```bash
+cd frontend
+cp .env.example .env.local   # API_BASE_URL, se o backend não estiver em localhost:8000
+npm install
+npm run dev
+# http://localhost:3000
+```
+
 ## Status
 
 M1 a M5 prontos: o chat já responde de verdade, via `POST /chat`, com as
@@ -88,5 +100,10 @@ antes de qualquer outra coisa).
 Atualização automática diária às 06:00 (scheduler + INLABS/DOU + notícias
 gov.br + consultas públicas), com `GET /timeline` (linha do tempo unificada
 das 4 fontes), `GET /consultas-publicas` e `GET /health/fontes` (saúde de
-cada fonte de ingestão). Ainda falta o frontend (M6). Detalhes de
-arquitetura, decisões e os relatórios completos em `CLAUDE.md`.
+cada fonte de ingestão).
+
+Frontend (`frontend/`, Next.js) em `M6`: chat, linha do tempo e consultas
+públicas, todos consumindo o backend acima — testado de ponta a ponta
+(pergunta real → RAG real → resposta com citação e status de vigência
+correto renderizada na tela). Detalhes de arquitetura, decisões e os
+relatórios completos em `CLAUDE.md`.
