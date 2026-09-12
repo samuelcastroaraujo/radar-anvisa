@@ -374,20 +374,129 @@ bloqueante para M1/M2.
 
 ---
 
+## Addendum M2 — mapeamento completo do módulo 310
+
+Feito ao iniciar o M2, testando de verdade contra o portal (nenhum endpoint
+abaixo foi suposto sem request real). Corrige/completa a seção 1 acima.
+
+### Os 5 sub-menus reais do módulo 310 (contagens confirmadas no HTML)
+
+| Categoria | cod_menu | ação | total confirmado |
+|---|---|---|---|
+| Normas por ano (**vigentes**) | 8542 | `recuperarTematicasCollapse` | **1.138** (soma por ano bate exato) |
+| Normas revogadas | 9882 | `abrirResenhaAnoData` | **2.438** |
+| Normas alteradoras | 9428 | `abrirResenhaAnoNumero` | **464** |
+| Normas retificadoras | 9429 | `abrirResenhaAnoData` | **291** |
+| Normas revogadoras | 9432 | `abrirResenhaAnoNumero` | **22** |
+
+(Os números "464 alteradoras / 291 retificadoras / 22 revogadoras" que
+apareciam embaralhados no enunciado original: o correto, confirmado no
+próprio texto do portal, é 464 alteradoras, **291** retificadoras, **22**
+revogadoras — não o contrário.)
+
+Alteradoras/retificadoras/revogadoras são **papéis** (tags), não um status de
+vigência à parte — um mesmo ato pode estar em "vigentes" ou "revogadas" **e**
+ser também uma "alteradora" de outro ato. Por isso o M2 não as trata como
+fonte de carga separada; usa essas contagens só como **validação** do grafo
+de relações extraído (quantas normas na nossa base têm pelo menos uma relação
+`altera`/`retifica`/`revoga`, comparado aos 464/291/22 do portal).
+
+### Vigentes (8542) — não é um GET simples, mas dá pra evitar Playwright
+
+`abrirResenhaAnoData&cod_menu=8542&ano=YYYY` **não existe** para vigentes (dá
+a mesma página genérica, sem itens) — diferente de revogadas/retificadoras.
+A listagem por ano é uma árvore renderizada em JS. Rastreei o JS
+(`buscarFilhos`/`mostrarFilhos` no HTML de `cod_menu=8542`) até achar a
+chamada real por trás do clique, sem precisar de navegador:
+
+1. `GET /action/ActionDatalegis.php?acao=recuperarTematicasCollapse&cod_modulo=310&cod_menu=8542`
+   → uma única página com **todos os anos e seus `co_tematica`** (id interno
+   por ano) e a contagem de cada um, ex.:
+   `&letra=2024 (164)&co_tematica=24361940`. Soma de todas as contagens = 1.138.
+2. `GET /action/TematicaAction.php?acao=abrirVinculos&cotematica={ID}&cod_modulo=310&cod_menu=8542&popup=S`
+   → retorna o **texto integral de todos os atos daquele ano em uma única
+   resposta** (não precisa abrir ato por ato!), cada um em um bloco
+   `<div class="tab_menor">...Ato: {tipo por extenso} nº {numero}, de
+   {data}...<span class="ico-situacao {classe} status-N" title="{Rótulo}">`
+   seguido do texto completo com as mesmas referências `LinkTexto(...)` já
+   vistas no M0. (Existe um passo intermediário,
+   `TematicaAction.php?acao=montarEstruturaTitulos`, que devolve um iframe
+   apontando para essa mesma URL de `abrirVinculos` — **desnecessário**, dá
+   pra ir direto usando o `co_tematica` já obtido no passo 1.)
+
+Total: **1 request para descobrir os anos + 1 request por ano** (~38 no
+histórico completo) cobre as 1.138 normas vigentes com texto integral e
+relações — nada de Playwright, nada de raspar ato por ato.
+
+**Classes de status vistas em `ico-situacao` dentro dessa listagem** (é um
+papel/rótulo de exibição, não substitui a derivação de `status_vigencia` da
+seção 5 do briefing): `vigente`, `alterador`, `vigente com alterações`. Todas
+as normas encontradas por este caminho valem `status_vigencia = 'vigente'`
+por construção (o portal já as classifica assim ao colocá-las nesta árvore);
+o texto e as relações `LinkTexto` é que dizem se uma delas foi alterada por
+outra (mantendo vigente, só registrando o dispositivo afetado, conforme a
+regra da seção 5).
+
+Amostras: `samples/vigentes_arvore_anos_8542.html` (mapa ano→co_tematica),
+`samples/vigentes_ano1966_trecho.html` (1 ato, real, com tabela grande —
+bom teste de documento longo), `samples/vigentes_ano2026_trecho.html`
+(recorte dos 3 primeiros atos de 2026, real).
+
+### Revogadas (9882) — como já confirmado no M0, mas sem texto integral em lote
+
+Continua `abrirResenhaAnoData&cod_menu=9882&ano=YYYY` com `<article
+class="ato">` por item (tipo/numero/ano/orgão vêm do `href` de
+`abrirTextoAto`, e a ementa/aviso de revogação vem como texto solto no
+próprio item) — **mas, diferente de vigentes, isso não traz o texto integral
+do ato**, só a ementa/aviso. Pegar `texto_integral` de cada uma das 2.438
+revogadas exige abrir `abrirTextoAto` individualmente (2.438 requests a
+1 req/s ≈ 40 min) — **decisão do M2**: carregar `norma` para todas as
+revogadas com os metadados da listagem (suficiente para status_vigencia,
+ementa e a relação "revogada por"), e deixar o texto integral de cada uma
+como enriquecimento posterior (M3, sob demanda, junto com o chunking — que
+precisa do texto de qualquer forma).
+
+**⚠️ Paginação real (achada só depois de uma primeira carga incompleta):**
+cada ano tem no máximo 50 itens por página nessa listagem — anos com mais de
+50 revogadas (a maioria dos anos entre ~1996 e 2022) ficam truncados se você
+só usar `abrirResenhaAnoData&ano=YYYY`. A primeira carga histórica rodada
+neste M2 achou só 1.598 das 2.438 por causa disso. A paginação real **não**
+é um `&pagina=N` na mesma URL (isso não tem efeito nenhum, devolve sempre a
+página 1) — é um mecanismo de 3 chamadas em sequência, na mesma
+sessão/cliente HTTP (o filtro de ano fica em estado de sessão, nenhuma das
+duas chamadas de paginação leva `&ano=` na URL):
+
+1. `abrirResenhaAnoData&cod_menu=9882&ano=YYYY` → página 1 (até 50 itens) e
+   seta o "ano atual" na sessão.
+2. Se a página 1 veio com exatamente 50 `<article class="ato">`, pode haver
+   mais: `carregarPaginaResenhaAno&cod_modulo=310&cod_menu=9882&pagina=1`
+   devolve só o *seletor* de páginas (`<option value='N'>N</option>` por
+   página existente) — o maior `N` é o total de páginas.
+3. Para cada página 2..N: `abrirPaginaResenhaAno&cod_modulo=310&cod_menu=9882
+   &qtd_pagina=50&pagina=N` devolve os próximos até-50 itens, no mesmo
+   formato `<article class="ato">` de sempre.
+
+Confirmado com o ano de 1996 (62 atos reais = 50 na página 1 + 12 na página
+2). Implementado em `AnvisaLegisClient.atos_revogados_do_ano` — ver
+`app/ingest/anvisalegis.py`.
+
 ## Resumo do que ficou pendente (nada foi inventado além disto)
 
 1. **`informes-de-seguranca`**: mudou para SPA em `consultas.anvisa.gov.br`;
    API real por trás não foi mapeada. Decisão pendente do usuário (ver seção 2).
 2. **Módulo 630 (Consultas Públicas)**: falta abrir um item individual de CP
    aberta para confirmar onde o "prazo" aparece no HTML.
-3. **Contagens 1.138 vigentes / 464 alteradoras / 291 revogadoras / 22
-   retificadoras**: só a de revogadas (2.438) foi confirmada textualmente no
-   menu; as demais serão validadas por contagem real no M2.
-4. **Dados abertos**: catalogado só superficialmente (4 itens no nível
+3. **Dados abertos**: catalogado só superficialmente (4 itens no nível
    raiz), sem descer nas subpastas ainda.
 
-**Resolvido nesta rodada:** INLABS testado de ponta a ponta com conta real
+**Resolvido no M0 (INLABS):** testado de ponta a ponta com conta real
 (login, download, unzip, filtro por `artCategory`, encoding) — ver seção 3.
+
+**Resolvido no M2:** as 5 contagens do portal (1.138 vigentes / 2.438
+revogadas / 464 alteradoras / **291** retificadoras / **22** revogadoras —
+essas duas últimas invertidas em relação ao que constava aqui antes) foram
+confirmadas com requisição real e usadas para validar a carga histórica —
+ver Addendum M2 abaixo e o resultado final em `CLAUDE.md`.
 
 Nenhum endpoint usado no código (a partir do M1) deve ir além do que está
 documentado e testado aqui. Qualquer ação nova (`acao=...`) encontrada durante

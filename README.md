@@ -75,7 +75,8 @@ docker run --env-file .env -p 8000:8000 radar-anvisa
 
 ## Status
 
-Esqueleto do backend pronto (M1): FastAPI + `/health`, schema do Supabase,
-`.env.example`, Docker e CI. Ainda não há nenhum ingestor real — isso começa
-no M2. Detalhes de arquitetura e decisões em `CLAUDE.md`; estado de cada
-milestone também lá.
+M1 (esqueleto) e M2 (ingestão do módulo 310 da ANVISA) prontos: a base de
+normas está populada de verdade no Supabase — 4.579 normas e quase 12 mil
+relações entre elas (quem altera, revoga, substitui quem), carregadas
+direto do AnvisaLegis. Ainda não há chat nem busca (isso é M3/M4). Detalhes
+de arquitetura, decisões e o relatório completo da carga em `CLAUDE.md`.
