@@ -1,0 +1,41 @@
+"""Configuração da aplicação, lida do ambiente/.env.
+
+Ver `.env.example` para a lista de variáveis suportadas e
+`research/FONTES.md` para o contexto de cada credencial externa.
+"""
+
+from functools import lru_cache
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    # Banco (Supabase Postgres) — string de conexão direta, usada pelo asyncpg.
+    database_url: str = ""
+
+    # Supabase (client REST, se vier a ser necessário além do Postgres direto)
+    supabase_url: str = ""
+    supabase_service_key: str = ""
+
+    # LLM / Embeddings
+    anthropic_api_key: str = ""
+    openai_api_key: str = ""
+
+    # INLABS (Imprensa Nacional / DOU) — conta pessoal, ver research/FONTES.md
+    inlabs_email: str = ""
+    inlabs_password: str = ""
+
+    # Alertas
+    resend_api_key: str = ""
+    telegram_bot_token: str = ""
+
+    # Aplicação
+    environment: str = "development"
+    crawl_user_agent: str = "RadarAnvisaBot/1.0 (+contato: mba5@nutropolis.com.br)"
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()

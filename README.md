@@ -46,7 +46,36 @@ Responde perguntas como:
 
 Detalhamento de endpoints, encoding e formatos em [`research/FONTES.md`](research/FONTES.md).
 
+## Rodando localmente
+
+Pré-requisitos: Python 3.12 e [`uv`](https://docs.astral.sh/uv/).
+
+```bash
+cp .env.example .env        # preencher DATABASE_URL, ANTHROPIC_API_KEY, etc.
+uv sync --dev
+uv run uvicorn app.main:app --reload
+# em outro terminal, aplicar o schema no Supabase (uma vez):
+psql "$DATABASE_URL" -f supabase/migrations/0001_schema.sql
+```
+
+Qualidade (o CI roda os três a cada push):
+
+```bash
+uv run ruff check . && uv run ruff format --check .
+uv run mypy app
+uv run pytest -q
+```
+
+Com Docker:
+
+```bash
+docker build -t radar-anvisa .
+docker run --env-file .env -p 8000:8000 radar-anvisa
+```
+
 ## Status
 
-Projeto em fase de reconhecimento (M0) — validação de endpoints reais antes de
-qualquer implementação. Veja os milestones em `CLAUDE.md` (a ser criado no M1).
+Esqueleto do backend pronto (M1): FastAPI + `/health`, schema do Supabase,
+`.env.example`, Docker e CI. Ainda não há nenhum ingestor real — isso começa
+no M2. Detalhes de arquitetura e decisões em `CLAUDE.md`; estado de cada
+milestone também lá.

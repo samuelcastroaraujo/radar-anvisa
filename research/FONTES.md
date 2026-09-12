@@ -65,8 +65,8 @@ Existem **duas camadas de encoding diferentes** nesse portal, confirmadas com by
 
 **Pipeline de decodificação obrigatório, nessa ordem:**
 ```python
-text = response.content.decode("iso-8859-1")   # 1) decodifica os bytes
-text = html.unescape(text)                       # 2) resolve entidades HTML
+text = response.content.decode("iso-8859-1")  # 1) decodifica os bytes
+text = html.unescape(text)  # 2) resolve entidades HTML
 # normalizar para NFC e persistir sempre como UTF-8
 ```
 Validado: após esse pipeline, `"Resolução" in text` e `"Vigilância Sanitária" in text`
