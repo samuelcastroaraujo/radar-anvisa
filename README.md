@@ -85,6 +85,10 @@ npm run dev
 # http://localhost:3000
 ```
 
+### Deploy e integrações (Railway, Vercel, Telegram, Resend)
+
+Passo a passo completo em [`DEPLOY.md`](DEPLOY.md).
+
 ## Status
 
 M1 a M5 prontos: o chat já responde de verdade, via `POST /chat`, com as
