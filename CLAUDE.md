@@ -581,6 +581,86 @@ e passa com ele. **Lição**: golden QA cobre a qualidade das respostas do
 RAG, mas não substitui um teste que atravesse a fronteira HTTP real —
 esse tipo de bug de serialização só um teste como esse pega.
 
+### Correção crítica de status_vigencia (pós-M7, a pedido do usuário)
+
+Pedido original: tornar a base "confiável, com acesso a todas as RDCs" pro
+setor de nutrição da indústria. Investigando a cobertura real pra
+responder isso (backfill do texto das revogadas — ver próxima seção),
+achei um **bug real de direção que promovia normas genuinamente vigentes
+para 'revogada' por engano** — o requisito #1, inegociável, do projeto
+inteiro.
+
+**A causa raiz**: `_extrair_relacoes` (app/ingest/anvisalegis.py) lê o
+texto de uma norma e, quando acha um `LinkTexto(...)` perto da palavra
+"revog" (ou "altera"/"retifica"/etc.), grava uma relação — mas até agora
+sempre assumia voz ativa ("esta norma revoga a norma X"). Uma norma
+VIGENTE pode perfeitamente ter, no meio do próprio texto, artigos ou
+incisos individuais marcados "(Revogado pela RDC X)" — voz **passiva**:
+é X quem revogou aquele dispositivo específico, não o ato inteiro que
+está sendo lido. Sem essa distinção, a relação saía invertida (origem e
+destino trocados) e o pós-processamento da seção 5
+(`_derivar_status_por_relacao`, que promove pra 'revogada' qualquer norma
+alvo de uma relação `tipo='revoga'`) marcava **X** — a norma que
+revogou o dispositivo, tipicamente ainda vigente — como revogada.
+
+**Nunca apareceu nos testes porque nunca tinha sido testado contra o
+texto de uma norma antiga o bastante pra ter esse padrão** — as amostras
+de teste até então eram todas relativamente enxutas. Só apareceu ao
+processar de verdade o texto de uma norma vigente de 1966 (durante o
+backfill das revogadas, ver próxima seção) cheia de incisos revogados
+individualmente ao longo de décadas.
+
+**Confirmado com uma checagem de sanidade direta contra a produção**:
+buscar `norma_relacao` com `tipo='revoga'` onde a origem foi publicada
+**depois** da data da norma que ela supostamente revoga — fisicamente
+impossível (não existe revogação retroativa) — achou **142 casos**. Uma
+delas era a **RDC 67/2007**, citada no relatório do M3 como prova de que
+o requisito de vigência funcionava (`busca_cli.py` a mostrava
+corretamente "REVOGADA") — na real, essa "prova" estava validando o
+efeito colateral do mesmo bug, não a correção do sistema. Confirmado
+direto na fonte: RDC 67/2007 **não aparece** na listagem de revogadas ao
+vivo do AnvisaLegis, e **aparece** na de vigentes.
+
+**Correção em duas partes**:
+1. `app/ingest/anvisalegis.py`: `VERBOS_RELACAO_PASSIVA` detecta a voz
+   passiva ("revogad[ao] pel[ao]", "alterad[ao] pel[ao]", etc.) e marca
+   `invertida=True`. Dentro disso, `_revoga_so_um_dispositivo` distingue
+   "Art. 12 - (Revogado pela X)" (um dispositivo só → `revoga_parcial`,
+   que não dispara a promoção de status) de "Revogada pela X" sozinho, no
+   topo da página de um ato genuinamente revogado por inteiro (→
+   `revoga`, que dispara). `tests/test_anvisalegis.py` tinha um teste que
+   **afirmava o comportamento do bug como correto** (`invertida=False`
+   pra esse caso) — corrigido pra refletir o comportamento certo, não o
+   código pro teste.
+2. `scripts/corrigir_direcao_revoga.py` (remediação de dado, não só de
+   código): busca a lista de vigentes de verdade no portal com o parser
+   corrigido e usa isso como fonte de verdade — qualquer norma marcada
+   'revogada' no banco mas confirmada 'vigente' ao vivo tem a promoção
+   revertida e a relação incorreta removida. Rodado em ponto fixo (3
+   iterações, cada uma limpa uma camada — a primeira remoção de relação
+   ruim permite o pós-processamento re-derivar com dado mais limpo, o que
+   revela a próxima camada) até convergir em **0 candidatos**.
+
+**Resultado final, verificado**: `vigente` 1010→**1129** (bate exato com
+a contagem ao vivo do portal), `revogada` 2595→**2476**, zero relações
+`revoga` com direção fisicamente impossível (eram 142). RDC 67/2007, RDC
+243/2018, RDC 87/2008 e RDC 883/2024 confirmadas `vigente` — as duas
+primeiras são exatamente os exemplos usados nos relatórios do M3/M4 como
+prova do funcionamento do sistema. `tests/golden_qa.yaml` tinha uma
+pergunta que codificava a resposta errada antiga pra RDC 67/2007
+(`status_esperado: revogada`) — corrigida pra `vigente`. Golden QA
+re-rodado depois da correção: ver resultado no fim desta seção.
+
+**Achado à parte, não relacionado a este bug**: `Portaria 1081/2023`
+(usada em outra pergunta do golden QA) está com `status_vigencia=
+'desconhecido'` — gap de cobertura pré-existente (nunca foi crawleada
+diretamente, só citada), não causado nem corrigido por este trabalho.
+
+**Efeito colateral aproveitado**: `AnvisaLegisClient` tinha timeout de
+30s, curto demais pra alguns anos de vigentes com resposta grande (ex.:
+1966, 600KB+) — deu `ReadTimeout` de verdade rodando a remediação.
+Aumentado pra 90s.
+
 ## Milestones (status)
 
 - [x] M0 — Reconhecimento das fontes.

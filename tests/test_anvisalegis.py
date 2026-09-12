@@ -68,13 +68,24 @@ def test_parse_atos_revogados_valida_encoding_datalegis() -> None:
 
 
 def test_parse_atos_vigentes_extrai_relacao_de_revogacao_do_linktexto() -> None:
+    """Este ato de 1966 continua VIGENTE mesmo tendo dezenas de incisos
+    revogados individualmente ao longo dos anos — achado real processando
+    o texto de verdade (não aparecia em amostra menor): "Art. 12 -
+    (Revogado pela RDC X)" é a revogação de UM dispositivo, não do ato
+    inteiro. Isso tem que virar `revoga_parcial` com `invertida=True`
+    (quem revoga o dispositivo é a RDC de 2007, não este ato de 1966) —
+    nunca `revoga` liso, que dispara a promoção de status em
+    `scripts/carga_historica_310.py` e marcaria a RDC de 2007 (que está
+    vigente) como revogada por engano."""
     texto = _carregar("vigentes_ano1966_trecho.html")
     ato = parse_atos_vigentes(texto, "http://teste")[0]
     tipos_relacao = {r.tipo for r in ato.relacoes}
-    assert "revoga" in tipos_relacao
-    revogacoes = [r for r in ato.relacoes if r.tipo == "revoga"]
-    assert any(r.destino_tipo_ato == "RDC" and r.destino_ano == 2007 for r in revogacoes)
-    assert all(not r.invertida for r in ato.relacoes)
+    assert "revoga_parcial" in tipos_relacao
+    parciais = [r for r in ato.relacoes if r.tipo == "revoga_parcial"]
+    assert any(r.destino_tipo_ato == "RDC" and r.destino_ano == 2007 for r in parciais)
+    assert all(r.invertida for r in parciais)
+    # nenhuma revogação do ato INTEIRO deveria sair daqui — ele é vigente.
+    assert not any(r.tipo == "revoga" and r.destino_ano == 2007 for r in ato.relacoes)
 
 
 def test_parse_atos_vigentes_nao_extrai_ementa_quando_ato_nao_tem() -> None:

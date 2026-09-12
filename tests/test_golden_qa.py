@@ -39,7 +39,12 @@ pytestmark = [
 
 @pytest.mark.parametrize("caso", CASOS, ids=[c["pergunta"] for c in CASOS])
 async def test_golden_qa(caso: dict[str, Any]) -> None:
-    pool = await asyncpg.create_pool(dsn=_settings.database_url, min_size=1, max_size=2)
+    # statement_cache_size=0 — ver comentário em app/db.py: obrigatório
+    # com o pooler do Supabase (Supavisor, modo transaction) em produção
+    # (e agora também localmente, já que o .env passou a usar o pooler).
+    pool = await asyncpg.create_pool(
+        dsn=_settings.database_url, min_size=1, max_size=2, statement_cache_size=0
+    )
     try:
         resultado = await responder(pool, caso["pergunta"])
 

@@ -65,6 +65,49 @@ VERBOS_RELACAO: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"substitu", re.I), "substitui"),
 ]
 
+# Checados ANTES de `VERBOS_RELACAO` (voz ativa) — achado real processando
+# o texto integral de uma norma revogada pela primeira vez (o texto dela
+# começa com "Revogada pela RDC X"): "revog" sozinho casa tanto com
+# "revoga a RDC X" (ESTE ato revoga o outro) quanto com "revogada pela RDC
+# X" (ESTE ato é quem foi revogado) — direções opostas. Nunca apareceu
+# antes porque só processávamos o texto de normas VIGENTES (que, por
+# definição, não têm um aviso de auto-revogação no próprio texto); passou
+# a importar ao processar o texto de normas revogadas (backfill). Sem essa
+# distinção, `salvar_ato` gravaria a relação ao contrário e o
+# pós-processamento do M2 ("promove pra revogada quem é alvo de uma
+# relação revoga") marcaria a norma revogadora — que está vigente — como
+# revogada por engano.
+VERBOS_RELACAO_PASSIVA: list[tuple[re.Pattern[str], str]] = [
+    (re.compile(r"revogad[ao]\s+parcialmente\s+pel[ao]", re.I), "revoga_parcial"),
+    (re.compile(r"revogad[ao]\s+pel[ao]", re.I), "revoga"),
+    (re.compile(r"alterad[ao]\s+pel[ao]|reda[cç][aã]o\s+dada\s+pel[ao]", re.I), "altera"),
+    (re.compile(r"retificad[ao]\s+pel[ao]", re.I), "retifica"),
+    (re.compile(r"regulamentad[ao]\s+pel[ao]", re.I), "regulamenta"),
+    (re.compile(r"substitu[íi]d[ao]\s+pel[ao]", re.I), "substitui"),
+]
+
+# Um "(Revogado pela X)" logo depois de um rótulo de artigo/inciso/alínea
+# (ex.: "Art. 12 -  (Revogado pela X)", "a)  (Revogado pela X)") é a
+# revogação de UM DISPOSITIVO só — o ato inteiro continua vigente. Achado
+# real processando o texto de uma norma vigente de 1966 cheia de incisos
+# revogados individualmente ao longo dos anos sem que o ato como um todo
+# saísse de vigor: sem essa distinção, isso viraria uma relação `revoga`
+# (não `revoga_parcial`) apontando pro ato que revogou só o inciso, e o
+# pós-processamento do M2 (`_derivar_status_por_relacao`) marcaria esse
+# ato — que pode estar perfeitamente vigente — como revogado por engano.
+# Já "Revogada pela X" sozinho, sem rótulo de dispositivo antes (como
+# aparece no início da própria página de uma norma revogada por inteiro),
+# fica como `revoga` mesmo — é essa a leitura correta.
+_RE_ROTULO_DISPOSITIVO_ANTES = re.compile(
+    r"(art\.?\s*\d+[ºo°]?|§\s*\d+[ºo°]?|par[áa]grafo\s+[úu]nico|\b[a-z]\)?|\b[ivxlcm]+[).]|\b[ivxlcm]+\s*[-–—])"
+    r"\s*[-–—]?\s*\(?\s*$",
+    re.I,
+)
+
+
+def _revoga_so_um_dispositivo(texto_antes_do_verbo: str) -> bool:
+    return bool(_RE_ROTULO_DISPOSITIVO_ANTES.search(texto_antes_do_verbo.strip()))
+
 
 @dataclass
 class RelacaoBruta:
@@ -118,8 +161,11 @@ class AnvisaLegisClient:
 
     def __init__(self, client: httpx.AsyncClient | None = None) -> None:
         settings = get_settings()
+        # 30s não bastava pra alguns anos de vigentes (respostas de 600KB+,
+        # ex. 1966) — achado real rodando o script de remediação da direção
+        # de "revoga" (ver CLAUDE.md): deu ReadTimeout mais de uma vez.
         self._client = client or httpx.AsyncClient(
-            headers={"User-Agent": settings.crawl_user_agent}, timeout=30.0
+            headers={"User-Agent": settings.crawl_user_agent}, timeout=90.0
         )
         self._limiter = RateLimiter()
         self._owns_client = client is None
@@ -179,6 +225,31 @@ class AnvisaLegisClient:
             },
         )
         return sorted({int(a) for a in re.findall(r"[?&]ano=(\d{4})", texto)})
+
+    async def texto_individual_do_ato(
+        self, tipo: str, numero_bruto: str, seq: str, ano: str, orgao: str
+    ) -> str:
+        """Página de detalhe de um único ato — funciona pra vigente ou
+        revogado (achado ao construir o backfill de texto das revogadas:
+        `abrirTextoAto` não é exclusivo do módulo 630/participação social,
+        onde foi descoberto primeiro). Devolve a página HTML inteira; quem
+        chama usa `extrair_texto_ato` pra tirar só o conteúdo de verdade.
+        `cod_menu=9882` (revogadas) funciona tanto pra revogada quanto pra
+        vigente — confirmado com requisição real, ver research/FONTES.md."""
+        return await self._get(
+            "/action/ActionDatalegis.php",
+            params={
+                "acao": "abrirTextoAto",
+                "link": "S",
+                "tipo": tipo,
+                "numeroAto": numero_bruto,
+                "seqAto": seq,
+                "valorAno": ano,
+                "orgao": orgao,
+                "cod_modulo": str(COD_MODULO_310),
+                "cod_menu": str(COD_MENU_REVOGADAS),
+            },
+        )
 
     async def atos_revogados_do_ano(self, ano: int) -> list[str]:
         """Retorna uma página por item da lista — o portal pagina em blocos
@@ -285,10 +356,22 @@ def _extrair_relacoes(bloco_html: str) -> list[RelacaoBruta]:
         contexto = bloco_html[max(0, m.start() - 120) : m.start()]
         contexto_texto = re.sub(r"<[^>]+>", " ", contexto)
         tipo_relacao = "referencia"
-        for padrao, nome in VERBOS_RELACAO:
-            if padrao.search(contexto_texto):
+        invertida = False
+        for padrao, nome in VERBOS_RELACAO_PASSIVA:
+            m_verbo = padrao.search(contexto_texto)
+            if m_verbo:
+                if nome == "revoga" and _revoga_so_um_dispositivo(
+                    contexto_texto[: m_verbo.start()]
+                ):
+                    nome = "revoga_parcial"
                 tipo_relacao = nome
+                invertida = True
                 break
+        else:
+            for padrao, nome in VERBOS_RELACAO:
+                if padrao.search(contexto_texto):
+                    tipo_relacao = nome
+                    break
         dispositivo = f"{cod_tipo} {des_item}".strip() if des_item else None
         relacoes.append(
             RelacaoBruta(
@@ -297,6 +380,7 @@ def _extrair_relacoes(bloco_html: str) -> list[RelacaoBruta]:
                 destino_numero=_normalizar_numero(numero),
                 destino_ano=int(ano),
                 dispositivo=dispositivo or None,
+                invertida=invertida,
             )
         )
     return relacoes
@@ -446,6 +530,53 @@ def parse_atos_revogados(texto: str, url_origem: str) -> list[AtoParseado]:
             )
         )
     return atos
+
+
+@dataclass
+class IndiceAtoRevogado:
+    """Só o suficiente pra buscar o texto individual depois — o `seqAto`
+    (descartado como `_seq` em `parse_atos_revogados`, que só quer a
+    ementa) é o dado que faltava pra isso funcionar."""
+
+    tipo_ato: str
+    numero_bruto: str
+    seq: str
+    ano: str
+    orgao: str
+
+
+def parse_indices_revogados(texto: str) -> list[IndiceAtoRevogado]:
+    """Mesma extração de `parse_atos_revogados`, mas preservando o
+    `seqAto` — usado só pelo backfill de texto integral
+    (`scripts/backfill_texto_revogadas.py`), não pela carga histórica
+    normal (que não precisa do texto individual pra cada uma das 2.438)."""
+    indices = []
+    for bloco in _RE_ARTICLE_ATO.findall(texto):
+        href_m = _RE_HREF_TEXTO_ATO.search(bloco)
+        if not href_m:
+            continue
+        tipo_ato, numero_bruto, seq, ano_str, orgao = href_m.groups()
+        indices.append(IndiceAtoRevogado(tipo_ato, numero_bruto, seq, ano_str, orgao))
+    return indices
+
+
+_RE_STATUS_BADGE = re.compile(r'ico-situacao\s+[a-z]+\s+status-\d+"\s+title="([^"]+)"')
+_RE_CONTEUDO_ATO = re.compile(r'<div class="ato">(.*?)<p[^>]*>Este texto não substitui', re.S)
+
+
+def extrair_texto_ato(pagina_html: str) -> tuple[str, list[RelacaoBruta]] | None:
+    """Extrai o texto integral e as relações (`LinkTexto`) da página de
+    detalhe de um ato (`abrirTextoAto`) — `None` se a página não tiver o
+    formato esperado (ato não encontrado, por exemplo). Corta no aviso
+    fixo "Este texto não substitui a Publicação Oficial" em vez de casar
+    `</div>` (o `<div class="ato">` não tem `<div>` aninhado nas amostras
+    reais, mas cortar num texto fixo e sempre presente é mais robusto que
+    contar chaves). Ver `research/samples/ato_individual_res13_1978.html`."""
+    m = _RE_CONTEUDO_ATO.search(pagina_html)
+    if not m:
+        return None
+    bruto = m.group(1)
+    return bruto, _extrair_relacoes(bruto)
 
 
 async def carregar_vigentes(cliente: AnvisaLegisClient) -> list[AtoParseado]:

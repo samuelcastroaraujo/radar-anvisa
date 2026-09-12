@@ -202,4 +202,10 @@
   tipo_ato_esperado: RDC
   numero_esperado: "67"
   ano_esperado: 2007
-  status_esperado: revogada
+  # Corrigido nesta sessão: RDC 67/2007 é VIGENTE de verdade — confirmado
+  # direto na listagem ao vivo do AnvisaLegis (não aparece em revogadas,
+  # aparece em vigentes). O valor antigo (revogada) vinha de um bug real
+  # de direção em app/ingest/anvisalegis.py (ver CLAUDE.md, "Correção
+  # crítica de status_vigencia") que promovia normas vigentes por engano
+  # quando seu próprio texto tinha um inciso revogado por outra norma.
+  status_esperado: vigente
