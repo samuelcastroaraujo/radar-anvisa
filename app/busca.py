@@ -107,7 +107,7 @@ async def busca_vetorial(
 ) -> list[asyncpg.Record]:
     where, valores = _where_filtro(filtro, 3)
     sql = f"""
-        select c.id as chunk_id, c.norma_id, n.tipo_ato, n.numero, n.ano,
+        select c.id::text as chunk_id, c.norma_id::text as norma_id, n.tipo_ato, n.numero, n.ano,
                n.status_vigencia, n.ementa, c.rotulo, c.conteudo, n.url_origem
         from chunk c join norma n on n.id = c.norma_id
         where true {where}
@@ -122,7 +122,7 @@ async def busca_texto(
 ) -> list[asyncpg.Record]:
     where, valores = _where_filtro(filtro, 3)
     sql = f"""
-        select c.id as chunk_id, c.norma_id, n.tipo_ato, n.numero, n.ano,
+        select c.id::text as chunk_id, c.norma_id::text as norma_id, n.tipo_ato, n.numero, n.ano,
                n.status_vigencia, n.ementa, c.rotulo, c.conteudo, n.url_origem
         from chunk c join norma n on n.id = c.norma_id
         where c.tsv @@ plainto_tsquery('portuguese', $1) {where}

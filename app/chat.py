@@ -159,8 +159,16 @@ def _contexto_tematico(
             f"Fonte: {r.url_origem}"
         )
         if r.norma_id not in vistas:
+            # str() de propósito: apesar de `ResultadoBusca.norma_id` ser
+            # anotado como `str`, o asyncpg devolve um `uuid.UUID` de
+            # verdade pra coluna `norma_id` — a anotação do dataclass não
+            # é validada em runtime, então isso só quebrava na fronteira
+            # HTTP de verdade (`NormaCitadaResponse`, um model Pydantic),
+            # nunca no golden QA (que chama `responder()` direto, sem
+            # passar pela validação Pydantic) — achado com tráfego real de
+            # produção, não local.
             vistas[r.norma_id] = NormaCitada(
-                id=r.norma_id,
+                id=str(r.norma_id),
                 tipo_ato=r.tipo_ato,
                 numero=r.numero,
                 ano=r.ano,

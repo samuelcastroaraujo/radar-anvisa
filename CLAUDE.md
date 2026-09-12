@@ -559,6 +559,28 @@ automático a cada push (a CLI não autoriza sozinha o "Vercel for GitHub"
 — precisa ser feito uma vez pelo dashboard); e as credenciais opcionais
 de alerta (Resend/Telegram, ver M7).
 
+**3º bug real, achado com tráfego de produção de verdade (não pelo
+deploy em si — pela primeira pergunta genérica de um usuário)**:
+`_contexto_tematico` (`app/chat.py`) guardava `ResultadoBusca.norma_id`
+direto em `NormaCitada.id` sem `str()` — o dataclass anota o campo como
+`str`, mas o asyncpg devolve `uuid.UUID` de verdade pra coluna
+`norma_id`. Como dataclass não valida tipo em runtime, isso nunca
+quebrou: nem em uso local, nem nas 33/33 perguntas do golden QA — porque
+`tests/test_golden_qa.py` chama `app.chat.responder()` **direto**,
+pulando inteiramente a validação Pydantic real que só acontece na
+fronteira HTTP (`NormaCitadaResponse` em `app/main.py`). Só estourou
+quando um usuário de verdade mandou uma pergunta genérica (roteada pro
+caminho temático) pelo `/chat` publicado. Corrigido em duas camadas: cast
+`::text` direto na SQL de `app/busca.py` (`busca_vetorial`/`busca_texto`,
+que tinha o mesmo problema latente em `chunk_id`, só nunca exercitado) e
+`str()` explícito em `_contexto_tematico`. Teste de regressão novo,
+`tests/test_chat.py`, reproduz o formato exato que o asyncpg devolve
+(`uuid.UUID` cru) e valida contra o `NormaCitadaResponse` Pydantic real —
+confirmado que ele falha sem o fix (revertido temporariamente pra provar)
+e passa com ele. **Lição**: golden QA cobre a qualidade das respostas do
+RAG, mas não substitui um teste que atravesse a fronteira HTTP real —
+esse tipo de bug de serialização só um teste como esse pega.
+
 ## Milestones (status)
 
 - [x] M0 — Reconhecimento das fontes.
