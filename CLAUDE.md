@@ -515,6 +515,50 @@ cobre os tipos que o módulo 310 já cataloga.
   de scripts diários — só depois que as 4 fontes já carregaram é que
   existe "recente" de verdade pra casar contra as regras.
 
+### Deploy real (produção)
+
+Backend no Railway (`https://radar-anvisa-production.up.railway.app`) e
+frontend na Vercel (`https://frontend-phi-ten-lhullf72f6.vercel.app`),
+repositório em `github.com/samuelcastroaraujo/radar-anvisa` (privado).
+Passo a passo completo em `DEPLOY.md`. **2 bugs reais achados só ao
+implantar de verdade** (nenhum dos dois aparecia em dev local):
+
+1. **A conexão direta do Supabase só resolve em IPv6** (confirmado com
+   `getaddrinfo` real — nenhum registro A, só AAAA) — o Railway não tem
+   saída IPv6, então o container subia mas o `/health` travava em
+   `OSError: [Errno 101] Network is unreachable` ao abrir o pool.
+   Corrigido trocando `DATABASE_URL` de produção pra connection string do
+   **pooler** do Supabase (Supavisor, `aws-0-us-west-2.pooler.supabase.com:
+   6543` — a região se descobre em Project Settings → General, não é
+   óbvio a partir da connection string direta).
+2. **O pooler em modo transaction não suporta os prepared statements que
+   o `asyncpg` usa por padrão** — toda query dava
+   `DuplicatePreparedStatementError` (só apareceu depois de corrigir o
+   bug 1 e a API já estar recebendo tráfego de verdade). Corrigido com
+   `statement_cache_size=0` em todo `asyncpg.create_pool` do projeto
+   (`app/db.py` + 6 scripts) — sem isso, o pooler é inutilizável com esse
+   driver.
+
+Também corrigidos **antes** do deploy (achados revisando o `Dockerfile`,
+nunca chegaram a rodar em produção assim): faltava `COPY scripts
+./scripts` (o scheduler dispara cada fonte como `python -m scripts.carga_
+*`, sem a pasta no container isso quebraria todo dia com
+`ModuleNotFoundError`) e o `CMD` fixava a porta em 8000 em vez de
+respeitar o `$PORT` que o Railway injeta.
+
+Validado de ponta a ponta em produção depois das correções: `/health`,
+`/health/fontes` (mostrando o histórico real de `job_execucao`),
+`/timeline` e `/consultas-publicas` com dado real do Supabase, e `/chat`
+(direto no Railway e via proxy da Vercel) respondendo "A RDC 27/2010
+ainda está vigente?" corretamente com **REVOGADA** — o requisito mais
+crítico do projeto, validado com tráfego real de produção, não só em
+teste local.
+
+Pendente: conectar o repositório GitHub ao projeto da Vercel pra deploy
+automático a cada push (a CLI não autoriza sozinha o "Vercel for GitHub"
+— precisa ser feito uma vez pelo dashboard); e as credenciais opcionais
+de alerta (Resend/Telegram, ver M7).
+
 ## Milestones (status)
 
 - [x] M0 — Reconhecimento das fontes.

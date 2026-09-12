@@ -5,6 +5,15 @@ frontend na Vercel, e as duas integrações opcionais de alerta (Telegram e
 email via Resend). Cada seção diz claramente o que é obrigatório e o que é
 opcional.
 
+**Já está no ar:**
+- Backend: https://radar-anvisa-production.up.railway.app
+- Frontend: https://frontend-phi-ten-lhullf72f6.vercel.app
+- Repositório: https://github.com/samuelcastroaraujo/radar-anvisa (privado)
+
+Pendente: conectar o GitHub ao projeto da Vercel pra deploy automático a
+cada push (só dá pra fazer pelo dashboard, ver seção 4), e as credenciais
+opcionais de alerta (seção 3).
+
 ```
 Vercel (frontend, Next.js)
    │  API_BASE_URL (server-only) — chamada servidor-a-servidor, sem CORS
