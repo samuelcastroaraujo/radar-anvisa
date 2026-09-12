@@ -1,0 +1,537 @@
+{
+  "@components": {
+    "actions": {
+      "@id": "https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa/2026/anvisa-autoriza-pesquisa-clinica-para-avaliar-a-seguranca-do-uso-de-polilaminina-em-humanos/@actions"
+    }, 
+    "aliases": {
+      "@id": "https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa/2026/anvisa-autoriza-pesquisa-clinica-para-avaliar-a-seguranca-do-uso-de-polilaminina-em-humanos/@aliases"
+    }, 
+    "breadcrumbs": {
+      "@id": "https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa/2026/anvisa-autoriza-pesquisa-clinica-para-avaliar-a-seguranca-do-uso-de-polilaminina-em-humanos/@breadcrumbs"
+    }, 
+    "contextnavigation": {
+      "@id": "https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa/2026/anvisa-autoriza-pesquisa-clinica-para-avaliar-a-seguranca-do-uso-de-polilaminina-em-humanos/@contextnavigation"
+    }, 
+    "navigation": {
+      "@id": "https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa/2026/anvisa-autoriza-pesquisa-clinica-para-avaliar-a-seguranca-do-uso-de-polilaminina-em-humanos/@navigation"
+    }, 
+    "navroot": {
+      "@id": "https://www.gov.br/anvisa/pt-br", 
+      "@type": "LRF", 
+      "title": "Portugu\u00eas (Brasil)"
+    }, 
+    "translations": {
+      "@id": "https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa/2026/anvisa-autoriza-pesquisa-clinica-para-avaliar-a-seguranca-do-uso-de-polilaminina-em-humanos/@translations"
+    }, 
+    "types": {
+      "@id": "https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa/2026/anvisa-autoriza-pesquisa-clinica-para-avaliar-a-seguranca-do-uso-de-polilaminina-em-humanos/@types"
+    }, 
+    "workflow": {
+      "@id": "https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa/2026/anvisa-autoriza-pesquisa-clinica-para-avaliar-a-seguranca-do-uso-de-polilaminina-em-humanos/@workflow"
+    }
+  }, 
+  "@id": "https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa/2026/anvisa-autoriza-pesquisa-clinica-para-avaliar-a-seguranca-do-uso-de-polilaminina-em-humanos", 
+  "@type": "News Item", 
+  "UID": "ab8fce194d7040a6b064b989968ddc84", 
+  "allow_discussion": false, 
+  "alt": [], 
+  "blocks": {
+    "0efcdaba-f0c4-4790-bb05-c47307847039": {
+      "@type": "html", 
+      "html": "<p class=\"Paragraph SCXW2629710 BCX0\" style=\"text-align: justify;\"><span class=\"TextRun SCXW2629710 BCX0\" data-contrast=\"auto\"><span class=\"NormalTextRun SCXW2629710 BCX0\">A</span><span class=\"NormalTextRun SCXW2629710 BCX0\">&nbsp;Ag\u00eancia Nacional de Vigil\u00e2ncia Sanit\u00e1ria</span><span class=\"NormalTextRun SCXW2629710 BCX0\">&nbsp;</span><span class=\"NormalTextRun SCXW2629710 BCX0\">(</span><span class=\"NormalTextRun SpellingErrorV2Themed SCXW2629710 BCX0\">Anvisa</span><span class=\"NormalTextRun SCXW2629710 BCX0\">)</span><span class=\"NormalTextRun SCXW2629710 BCX0\">&nbsp;<a class=\"external-link\" data-tippreview-enabled=\"false\" data-tippreview-image=\"\" data-tippreview-title=\"\" href=\"https://in.gov.br/web/dou/-/resolucao-re-n-8-de-2-de-janeiro-de-2026-679113833\" target=\"_self\" title=\"\">autorizou</a></span><span class=\"NormalTextRun SCXW2629710 BCX0\">,</span><span class=\"NormalTextRun SCXW2629710 BCX0\">&nbsp;nesta segunda-feira (5</span><span class=\"NormalTextRun SCXW2629710 BCX0\">/1</span><span class=\"NormalTextRun SCXW2629710 BCX0\">)</span><span class=\"NormalTextRun SCXW2629710 BCX0\">,</span><span class=\"NormalTextRun SCXW2629710 BCX0\">&nbsp;o in\u00edcio do estudo cl\u00ednico de fase 1 para avalia\u00e7\u00e3o de seguran\u00e7a do uso da p</span><span class=\"NormalTextRun SpellingErrorV2Themed SCXW2629710 BCX0\">olilaminina</span><span class=\"NormalTextRun SCXW2629710 BCX0\">&nbsp;para o tratamento de trauma&nbsp;</span><span class=\"NormalTextRun SpellingErrorV2Themed SCXW2629710 BCX0\">raquimedular</span><span class=\"NormalTextRun SCXW2629710 BCX0\">&nbsp;agudo.</span><span class=\"NormalTextRun SCXW2629710 BCX0\">&nbsp;</span><span class=\"NormalTextRun SCXW2629710 BCX0\">O patrocinador do estudo cl\u00ednico \u00e9 a empresa Crist\u00e1lia Produtos Qu\u00edmicos Farmac\u00eauticos Ltda</span><span class=\"NormalTextRun SCXW2629710 BCX0\">.</span></span><span class=\"EOP SCXW2629710 BCX0\" data-ccp-props=\"{&quot;335559738&quot;:240,&quot;335559739&quot;:240}\">&nbsp;</span></p>"
+    }, 
+    "1be49ae6-3e9d-4c07-ae2e-e39313bd3bf0": {
+      "@type": "slate", 
+      "plaintext": "No caso de pesquisa com foco\u00a0no futuro\u00a0registro\u00a0de um medicamento,\u00a0\u00e9 necess\u00e1ria a avalia\u00e7\u00e3o da\u00a0Anvisa\u00a0sobre o protocolo de investiga\u00e7\u00e3o cl\u00ednica.\u00a0", 
+      "value": [
+        {
+          "children": [
+            {
+              "text": "No caso de pesquisa com foco no futuro registro de um medicamento, \u00e9 necess\u00e1ria a avalia\u00e7\u00e3o da Anvisa sobre o protocolo de investiga\u00e7\u00e3o cl\u00ednica. "
+            }
+          ], 
+          "type": "p"
+        }
+      ]
+    }, 
+    "1cdf69bd-e389-48b1-8e96-4b0588bdeda4": {
+      "@type": "slate", 
+      "plaintext": "Objetivo do estudo\u00a0", 
+      "value": [
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "text": "Objetivo do estudo"
+                }
+              ], 
+              "type": "strong"
+            }, 
+            {
+              "text": " "
+            }
+          ], 
+          "type": "p"
+        }
+      ]
+    }, 
+    "207c2821-25d1-43a4-a78c-5fdd29466136": {
+      "@type": "html", 
+      "html": "<p class=\"Paragraph SCXW2629710 BCX0\" style=\"text-align: justify;\"><span class=\"EOP SCXW2629710 BCX0\" data-ccp-props=\"{&quot;335559738&quot;:240,&quot;335559739&quot;:240}\">Confira as <a class=\"external-link\" data-tippreview-enabled=\"false\" data-tippreview-image=\"\" data-tippreview-title=\"\" href=\"https://www.flickr.com/photos/anvisa/albums/72177720331318569\" target=\"_self\" title=\"\">fotos </a>da coletiva de imprensa sobre a divulga\u00e7\u00e3o da autoriza\u00e7\u00e3o do estudo cl\u00ednico sobre polilaminina, que aconteceu nesta segunda-feira (5/1) na sede da Anvisa, em Bras\u00edlia (DF).</span></p>"
+    }, 
+    "222652d7-dba6-4c51-a9c7-86bb4a23ee34": {
+      "@type": "slate", 
+      "plaintext": "Esse\u00a0processo\u00a0\u00e9\u00a0progressivo e envolve algumas etapas\u00a0que come\u00e7am com poucos participantes e v\u00e3o sendo ampliadas.\u00a0Antes dos testes com seres humanos,\u00a0o produto\u00a0deve passar\u00a0pela\u00a0fase pr\u00e9-cl\u00ednica. Essa fase envolve testes\u00a0in vitro\u00a0(fora do organismo vivo) e\u00a0in vivo (dentro do organismo vivo) e\u00a0geralmente \u00e9\u00a0realizada em universidades p\u00fablicas ou privadas. Por isso, \u00e9 considerada pesquisa acad\u00eamica e em geral tem o objetivo de gerar conhecimento cient\u00edfico e publica\u00e7\u00e3o de artigos.\u00a0", 
+      "value": [
+        {
+          "children": [
+            {
+              "text": "Esse processo \u00e9 progressivo e envolve algumas etapas que come\u00e7am com poucos participantes e v\u00e3o sendo ampliadas. Antes dos testes com seres humanos, o produto deve passar pela fase pr\u00e9-cl\u00ednica. Essa fase envolve testes in vitro (fora do organismo vivo) e in vivo (dentro do organismo vivo) e geralmente \u00e9 realizada em universidades p\u00fablicas ou privadas. Por isso, \u00e9 considerada pesquisa acad\u00eamica e em geral tem o objetivo de gerar conhecimento cient\u00edfico e publica\u00e7\u00e3o de artigos. "
+            }
+          ], 
+          "type": "p"
+        }
+      ]
+    }, 
+    "286fc400-2928-47b3-8646-e804b75de9e1": {
+      "@type": "slate", 
+      "plaintext": "Os locais\u00a0de realiza\u00e7\u00e3o do\u00a0estudo cl\u00ednico\u00a0ainda ser\u00e3o\u00a0definidos\u00a0pela empresa\u00a0e informados \u00e0\u00a0Ag\u00eancia.\u00a0", 
+      "value": [
+        {
+          "children": [
+            {
+              "text": "Os locais de realiza\u00e7\u00e3o do estudo cl\u00ednico ainda ser\u00e3o definidos pela empresa e informados \u00e0 Ag\u00eancia. "
+            }
+          ], 
+          "type": "p"
+        }
+      ]
+    }, 
+    "29a89757-6758-4bf6-8aea-fae0aacdeb6d": {
+      "@type": "slate", 
+      "plaintext": "As informa\u00e7\u00f5es apresentadas inicialmente foram geradas a partir de testes iniciais de bancada (laborat\u00f3rio), em modelos animais e em alguns poucos pacientes. Essas primeiras pesquisas n\u00e3o tinham o objetivo de apoiar o\u00a0registro\u00a0do produto para disponibiliza\u00e7\u00e3o no mercado brasileiro e,\u00a0por esse motivo,\u00a0n\u00e3o contemplavam alguns\u00a0aspectos\u00a0importantes para o estudo cl\u00ednico.\u00a0\u00a0\u00a0", 
+      "value": [
+        {
+          "children": [
+            {
+              "text": "As informa\u00e7\u00f5es apresentadas inicialmente foram geradas a partir de testes iniciais de bancada (laborat\u00f3rio), em modelos animais e em alguns poucos pacientes. Essas primeiras pesquisas n\u00e3o tinham o objetivo de apoiar o registro do produto para disponibiliza\u00e7\u00e3o no mercado brasileiro e, por esse motivo, n\u00e3o contemplavam alguns aspectos importantes para o estudo cl\u00ednico.   "
+            }
+          ], 
+          "type": "p"
+        }
+      ]
+    }, 
+    "315d1b0b-be33-42ab-a68a-337d7d070a99": {
+      "@type": "slate", 
+      "plaintext": "Para avalia\u00e7\u00e3o do perfil de seguran\u00e7a,\u00a0\u00e9 fundamental o monitoramento de eventos adversos, que devem ser\u00a0observados\u00a0e avaliados pela equipe de pesquisadores\u00a0e pela empresa patrocinadora.\u00a0Esse acompanhamento envolve observar a\u00a0frequ\u00eancia e a gravidade\u00a0dos eventos\u00a0e a sua rela\u00e7\u00e3o com o uso do medicamento experimental,\u00a0ou com o pr\u00f3prio procedimento de administra\u00e7\u00e3o do medicamento na \u00e1rea da medula lesionada.\u00a0", 
+      "value": [
+        {
+          "children": [
+            {
+              "text": "Para avalia\u00e7\u00e3o do perfil de seguran\u00e7a, \u00e9 fundamental o monitoramento de eventos adversos, que devem ser observados e avaliados pela equipe de pesquisadores e pela empresa patrocinadora. Esse acompanhamento envolve observar a frequ\u00eancia e a gravidade dos eventos e a sua rela\u00e7\u00e3o com o uso do medicamento experimental, ou com o pr\u00f3prio procedimento de administra\u00e7\u00e3o do medicamento na \u00e1rea da medula lesionada. "
+            }
+          ], 
+          "type": "p"
+        }
+      ]
+    }, 
+    "3597a4d5-a02f-46e4-b241-e504dfd56ccc": {
+      "@type": "slate", 
+      "plaintext": "O\u00a0estudo\u00a0cl\u00ednico de fase 1 autorizado pela\u00a0Anvisa\u00a0vai\u00a0avaliar a seguran\u00e7a da aplica\u00e7\u00e3o da\u00a0polilaminina\u00a0em cinco pacientes\u00a0com idade entre 18 e 72 anos,\u00a0que t\u00eam\u00a0les\u00f5es agudas completas da medula espinhal tor\u00e1cica\u00a0entre as v\u00e9rtebras T2 e T10, ocorridas h\u00e1 menos de 72 horas, com indica\u00e7\u00e3o cir\u00fargica.\u00a0", 
+      "value": [
+        {
+          "children": [
+            {
+              "text": "O estudo cl\u00ednico de fase 1 autorizado pela Anvisa vai avaliar a seguran\u00e7a da aplica\u00e7\u00e3o da polilaminina em cinco pacientes com idade entre 18 e 72 anos, que t\u00eam les\u00f5es agudas completas da medula espinhal tor\u00e1cica entre as v\u00e9rtebras T2 e T10, ocorridas h\u00e1 menos de 72 horas, com indica\u00e7\u00e3o cir\u00fargica. "
+            }
+          ], 
+          "type": "p"
+        }
+      ]
+    }, 
+    "4a937995-bd99-47a4-b014-7ee3c06b90bd": {
+      "@type": "slate", 
+      "plaintext": "Hist\u00f3rico\u00a0", 
+      "value": [
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "text": "Hist\u00f3rico"
+                }
+              ], 
+              "type": "strong"
+            }, 
+            {
+              "text": " "
+            }
+          ], 
+          "type": "p"
+        }
+      ]
+    }, 
+    "4eb6258c-8344-439c-a700-dd210ca32dfa": {
+      "@type": "dateSocialShareBlock", 
+      "fixed": true, 
+      "required": true
+    }, 
+    "50ff3782-e7b7-4977-9523-ade39d859368": {
+      "@type": "html", 
+      "html": "<p class=\"Paragraph SCXW2629710 BCX0\" style=\"text-align: justify;\"><span class=\"TextRun SCXW2629710 BCX0\" data-contrast=\"auto\"><span class=\"NormalTextRun SCXW2629710 BCX0\">A&nbsp;</span><span class=\"NormalTextRun SpellingErrorV2Themed SCXW2629710 BCX0\">Anvisa</span><span class=\"NormalTextRun SCXW2629710 BCX0\">&nbsp;acompanha o desenvolvimento cl\u00ednico</span><span class=\"NormalTextRun SCXW2629710 BCX0\">&nbsp;por meio do&nbsp;</span><span class=\"NormalTextRun SCXW2629710 BCX0\">monitoramento de seguran\u00e7a das notifica\u00e7\u00f5es de eventos adversos, obrigatoriamente realizadas pela empresa, e&nbsp;</span><span class=\"NormalTextRun SCXW2629710 BCX0\">por meio</span><span class=\"NormalTextRun SCXW2629710 BCX0\">&nbsp;de inspe\u00e7\u00f5es de BPC nos centros onde est\u00e3o sendo realizadas as pesquisas.</span></span><span class=\"EOP SCXW2629710 BCX0\" data-ccp-props=\"{&quot;335559738&quot;:240,&quot;335559739&quot;:240}\">&nbsp;</span></p>"
+    }, 
+    "55927c7d-7b30-4096-8eb6-ef5db137b38a": {
+      "@type": "title", 
+      "fixed": true, 
+      "required": true
+    }, 
+    "57b967e7-f602-4a0f-b260-89159146ee43": {
+      "@type": "slate", 
+      "plaintext": "Os primeiros dados para\u00a0a\u00a0solicita\u00e7\u00e3o\u00a0de autoriza\u00e7\u00e3o da pesquisa foram apresentados pela empresa no final de 2022 e no in\u00edcio de 2023. Durante esse per\u00edodo,\u00a0a equipe t\u00e9cnica da\u00a0Anvisa\u00a0realizou\u00a0reuni\u00f5es t\u00e9cnicas e aconselhamento cient\u00edfico\u00a0para que a\u00a0Crist\u00e1lia Produtos Qu\u00edmicos Farmac\u00eauticos\u00a0pudesse\u00a0atender a\u00a0todos\u00a0os\u00a0requisitos t\u00e9cnicos\u00a0e regulat\u00f3rios\u00a0para o estudo cl\u00ednico.\u00a0", 
+      "value": [
+        {
+          "children": [
+            {
+              "text": "Os primeiros dados para a solicita\u00e7\u00e3o de autoriza\u00e7\u00e3o da pesquisa foram apresentados pela empresa no final de 2022 e no in\u00edcio de 2023. Durante esse per\u00edodo, a equipe t\u00e9cnica da Anvisa realizou reuni\u00f5es t\u00e9cnicas e aconselhamento cient\u00edfico para que a Crist\u00e1lia Produtos Qu\u00edmicos Farmac\u00eauticos pudesse atender a todos os requisitos t\u00e9cnicos e regulat\u00f3rios para o estudo cl\u00ednico. "
+            }
+          ], 
+          "type": "p"
+        }
+      ]
+    }, 
+    "73d2351d-d7b4-49b4-88c1-9ad7c2fa91ab": {
+      "@type": "slate", 
+      "plaintext": "Os testes acad\u00eamicos anteriormente realizados podem ser aproveitados e servem de ponto de partida para a realiza\u00e7\u00e3o de testes complementares para atender aos requisitos regulat\u00f3rios da fase pr\u00e9-cl\u00ednica. Os testes adicionais na fase pr\u00e9-cl\u00ednica t\u00eam por objetivo comprovar a seguran\u00e7a e efic\u00e1cia preliminar da nova subst\u00e2ncia candidata a medicamento ou vacina e dar subs\u00eddios para o prosseguimento das pr\u00f3ximas etapas ou fases do desenvolvimento em humanos. Para fins regulat\u00f3rios, a empresa dever\u00e1 utilizar m\u00e9todos e procedimentos cient\u00edficos internacionalmente reconhecidos e cumprir rigorosamente com os princ\u00edpios \u00e9ticos e de Boas Pr\u00e1ticas Cl\u00ednicas (BPC).\u00a0", 
+      "value": [
+        {
+          "children": [
+            {
+              "text": "Os testes acad\u00eamicos anteriormente realizados podem ser aproveitados e servem de ponto de partida para a realiza\u00e7\u00e3o de testes complementares para atender aos requisitos regulat\u00f3rios da fase pr\u00e9-cl\u00ednica. Os testes adicionais na fase pr\u00e9-cl\u00ednica t\u00eam por objetivo comprovar a seguran\u00e7a e efic\u00e1cia preliminar da nova subst\u00e2ncia candidata a medicamento ou vacina e dar subs\u00eddios para o prosseguimento das pr\u00f3ximas etapas ou fases do desenvolvimento em humanos. Para fins regulat\u00f3rios, a empresa dever\u00e1 utilizar m\u00e9todos e procedimentos cient\u00edficos internacionalmente reconhecidos e cumprir rigorosamente com os princ\u00edpios \u00e9ticos e de Boas Pr\u00e1ticas Cl\u00ednicas (BPC). "
+            }
+          ], 
+          "type": "p"
+        }
+      ]
+    }, 
+    "74251e0b-aeca-4ad0-b2d8-03359aa4268f": {
+      "@type": "description", 
+      "fixed": true
+    }, 
+    "770f8cc2-e3d9-4e5e-a4cf-2b2bdd930c4e": {
+      "@type": "slate", 
+      "plaintext": "Sobre a pesquisa cl\u00ednica\u00a0", 
+      "value": [
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "text": "Sobre a pesquisa cl\u00ednica"
+                }
+              ], 
+              "type": "strong"
+            }, 
+            {
+              "text": " "
+            }
+          ], 
+          "type": "p"
+        }
+      ]
+    }, 
+    "7d92f8b7-d26b-4e91-8970-191f9269dd50": {
+      "@type": "slate", 
+      "plaintext": "Na\u00a0formula\u00e7\u00e3o\u00a0a ser\u00a0testada,\u00a0ser\u00e1 utilizada a\u00a0laminina\u00a0extra\u00edda de placenta humana.\u00a0A\u00a0laminina\u00a0\u00e9 a subst\u00e2ncia que forma a\u00a0polilaminina.\u00a0At\u00e9 este momento, o mecanismo de a\u00e7\u00e3o da\u00a0polilaminia\u00a0para o tratamento de trauma\u00a0na\u00a0medula espinhal\u00a0ainda n\u00e3o est\u00e1 totalmente esclarecido.\u00a0\u00a0", 
+      "value": [
+        {
+          "children": [
+            {
+              "text": "Na formula\u00e7\u00e3o a ser testada, ser\u00e1 utilizada a laminina extra\u00edda de placenta humana. A laminina \u00e9 a subst\u00e2ncia que forma a polilaminina. At\u00e9 este momento, o mecanismo de a\u00e7\u00e3o da polilaminia para o tratamento de trauma na medula espinhal ainda n\u00e3o est\u00e1 totalmente esclarecido.  "
+            }
+          ], 
+          "type": "p"
+        }
+      ]
+    }, 
+    "86fd6f78-d2e2-424d-92d0-703c9cd7369e": {
+      "@type": "slate", 
+      "plaintext": "A pesquisa cl\u00ednica ou estudo cl\u00ednico \u00e9 uma investiga\u00e7\u00e3o cient\u00edfica que envolve a participa\u00e7\u00e3o de seres humanos e \u00e9 essencial para avaliar a seguran\u00e7a e a efic\u00e1cia de novos medicamentos, vacinas, equipamentos m\u00e9dicos ou procedimentos.\u00a0", 
+      "value": [
+        {
+          "children": [
+            {
+              "text": "A pesquisa cl\u00ednica ou estudo cl\u00ednico \u00e9 uma investiga\u00e7\u00e3o cient\u00edfica que envolve a participa\u00e7\u00e3o de seres humanos e \u00e9 essencial para avaliar a seguran\u00e7a e a efic\u00e1cia de novos medicamentos, vacinas, equipamentos m\u00e9dicos ou procedimentos. "
+            }
+          ], 
+          "type": "p"
+        }
+      ]
+    }, 
+    "914cdde1-3303-48e5-a6c7-75580d809558": {
+      "@type": "slate", 
+      "plaintext": "Dentre os potenciais eventos adversos, a empresa deve monitorar tamb\u00e9m aqueles\u00a0relacionados a uma eventual\u00a0produ\u00e7\u00e3o de anticorpos\u00a0antidroga\u00a0(polilaminina), que\u00a0pode\u00a0acontecer\u00a0quando o\u00a0sistema imunol\u00f3gico do paciente\u00a0reconhece o tratamento\u00a0como uma subst\u00e2ncia estranha ou invasora.\u00a0\u00a0", 
+      "value": [
+        {
+          "children": [
+            {
+              "text": "Dentre os potenciais eventos adversos, a empresa deve monitorar tamb\u00e9m aqueles relacionados a uma eventual produ\u00e7\u00e3o de anticorpos antidroga (polilaminina), que pode acontecer quando o sistema imunol\u00f3gico do paciente reconhece o tratamento como uma subst\u00e2ncia estranha ou invasora.  "
+            }
+          ], 
+          "type": "p"
+        }
+      ]
+    }, 
+    "9bd240b3-b891-4774-b1e9-afa451a14ca8": {
+      "@type": "slate", 
+      "plaintext": "Neste momento,\u00a0o estudo proposto ainda \u00e9 insuficiente para avaliar\u00a0a efic\u00e1cia do medicamento. O foco inicial do estudo\u00a0\u00e9 verificar a seguran\u00e7a do produto. A depender dos resultados da fase 1 do estudo, ele poder\u00e1 avan\u00e7ar para as etapas de fase 2 e 3,\u00a0que t\u00eam o objetivo de comprovar a\u00a0efic\u00e1cia do medicamento.", 
+      "value": [
+        {
+          "children": [
+            {
+              "text": "Neste momento, o estudo proposto ainda \u00e9 insuficiente para avaliar a efic\u00e1cia do medicamento. O foco inicial do estudo \u00e9 verificar a seguran\u00e7a do produto. A depender dos resultados da fase 1 do estudo, ele poder\u00e1 avan\u00e7ar para as etapas de fase 2 e 3, que t\u00eam o objetivo de comprovar a efic\u00e1cia do medicamento.\n"
+            }
+          ], 
+          "type": "p"
+        }
+      ]
+    }, 
+    "acc555b0-4953-4afb-9be2-e21f1a713966": {
+      "@type": "slate", 
+      "plaintext": "A avalia\u00e7\u00e3o de seguran\u00e7a busca verificar os riscos potenciais aos quais os pacientes poder\u00e3o estar expostos,\u00a0para que sejam adotadas medidas de minimiza\u00e7\u00e3o desses riscos ou a reavalia\u00e7\u00e3o por parte da empresa e investigadores sobre a viabilidade do prosseguimento do estudo.\u00a0", 
+      "value": [
+        {
+          "children": [
+            {
+              "text": "A avalia\u00e7\u00e3o de seguran\u00e7a busca verificar os riscos potenciais aos quais os pacientes poder\u00e3o estar expostos, para que sejam adotadas medidas de minimiza\u00e7\u00e3o desses riscos ou a reavalia\u00e7\u00e3o por parte da empresa e investigadores sobre a viabilidade do prosseguimento do estudo. "
+            }
+          ], 
+          "type": "p"
+        }
+      ]
+    }, 
+    "b0842af4-4a41-428b-a8cd-3a75bafcd364": {
+      "@type": "slate", 
+      "plaintext": "A empresa patrocinadora deve coletar, monitorar e avaliar sistematicamente todos os eventos adversos ocorridos ao longo do desenvolvimento cl\u00ednico, inclusive os n\u00e3o graves, e se responsabilizar pela seguran\u00e7a dos participantes do ensaio cl\u00ednico. Todas as suspeitas de rea\u00e7\u00f5es adversas graves e inesperadas devem ser notificadas \u00e0\u00a0Anvisa\u00a0e qualquer modifica\u00e7\u00e3o substancial do protocolo cl\u00ednico ou do produto sob investiga\u00e7\u00e3o s\u00f3 deve ser implementada ap\u00f3s pr\u00e9via autoriza\u00e7\u00e3o da\u00a0Ag\u00eancia.\u00a0", 
+      "value": [
+        {
+          "children": [
+            {
+              "text": "A empresa patrocinadora deve coletar, monitorar e avaliar sistematicamente todos os eventos adversos ocorridos ao longo do desenvolvimento cl\u00ednico, inclusive os n\u00e3o graves, e se responsabilizar pela seguran\u00e7a dos participantes do ensaio cl\u00ednico. Todas as suspeitas de rea\u00e7\u00f5es adversas graves e inesperadas devem ser notificadas \u00e0 Anvisa e qualquer modifica\u00e7\u00e3o substancial do protocolo cl\u00ednico ou do produto sob investiga\u00e7\u00e3o s\u00f3 deve ser implementada ap\u00f3s pr\u00e9via autoriza\u00e7\u00e3o da Ag\u00eancia. "
+            }
+          ], 
+          "type": "p"
+        }
+      ]
+    }, 
+    "b1bdc4cc-44e2-47dc-a18c-e9ad4493232f": {
+      "@type": "slate", 
+      "plaintext": "A\u00a0polilaminina\u00a0\u00e9 uma prote\u00edna produzida por diversos animais, inclusive pelos seres humanos,\u00a0e est\u00e1 envolvida em diversas atividades biol\u00f3gicas no organismo.\u00a0No estudo cl\u00ednico,\u00a0ser\u00e1 utilizada a\u00a0laminina\u00a0100\u00a0\u03bcg/mL\u00a0na forma de solu\u00e7\u00e3o injet\u00e1vel,\u00a0que deve ser dilu\u00edda antes do uso em um diluente espec\u00edfico para se obter a\u00a0polilaminina\u00a0ou\u00a0laminina\u00a0polimerizada em solu\u00e7\u00e3o para administra\u00e7\u00e3o intramedular \u00fanica, diretamente na \u00e1rea lesionada.\u00a0", 
+      "value": [
+        {
+          "children": [
+            {
+              "text": "A polilaminina \u00e9 uma prote\u00edna produzida por diversos animais, inclusive pelos seres humanos, e est\u00e1 envolvida em diversas atividades biol\u00f3gicas no organismo. No estudo cl\u00ednico, ser\u00e1 utilizada a laminina 100 \u03bcg/mL na forma de solu\u00e7\u00e3o injet\u00e1vel, que deve ser dilu\u00edda antes do uso em um diluente espec\u00edfico para se obter a polilaminina ou laminina polimerizada em solu\u00e7\u00e3o para administra\u00e7\u00e3o intramedular \u00fanica, diretamente na \u00e1rea lesionada. "
+            }
+          ], 
+          "type": "p"
+        }
+      ]
+    }, 
+    "cd6ad916-43ea-4aea-ae41-2dacb5e8992e": {
+      "@type": "subtitleBlock", 
+      "fixed": true
+    }, 
+    "d6f6e6a1-ec5b-4acb-ab0e-24b6780f3abc": {
+      "@type": "slate", 
+      "plaintext": "Quando s\u00e3o identificadas subst\u00e2ncias com resultados promissores, pode haver interesse por parte de empresas farmac\u00eauticas em patrocinar a continuidade do desenvolvimento da pesquisa para gerar evid\u00eancias,\u00a0com a finalidade de subsidiar o\u00a0registro\u00a0sanit\u00e1rio de novos medicamentos.\u00a0", 
+      "value": [
+        {
+          "children": [
+            {
+              "text": "Quando s\u00e3o identificadas subst\u00e2ncias com resultados promissores, pode haver interesse por parte de empresas farmac\u00eauticas em patrocinar a continuidade do desenvolvimento da pesquisa para gerar evid\u00eancias, com a finalidade de subsidiar o registro sanit\u00e1rio de novos medicamentos. "
+            }
+          ], 
+          "type": "p"
+        }
+      ]
+    }, 
+    "e9fae7ef-f133-4b02-bb69-99fbfabb4ae8": {
+      "@type": "leadimage", 
+      "fixed": true
+    }, 
+    "eab5b8bf-8758-4510-b49d-cd26dc977835": {
+      "@type": "textToSpeech", 
+      "fixed": true
+    }, 
+    "f956b1ad-dbfb-4156-8b20-4c22ad7478f2": {
+      "@type": "slate", 
+      "plaintext": "A\u00a0polilaminina\u00a0\u00e9 um dos temas estrat\u00e9gicos do\u00a0Comit\u00ea de Inova\u00e7\u00e3o da Anvisa,\u00a0criado em 2025 para\u00a0monitorar e apoiar a avalia\u00e7\u00e3o regulat\u00f3ria de produtos e tecnologias inovadoras, garantindo que a regula\u00e7\u00e3o\u00a0facilite o desenvolvimento de\u00a0solu\u00e7\u00f5es que melhorem a qualidade de vida da popula\u00e7\u00e3o.\u00a0Outros\u00a0assuntos\u00a0priorit\u00e1rios\u00a0para o Comit\u00ea\u00a0s\u00e3o: a vacina contra\u00a0a\u00a0Chikungunya,\u00a0endopr\u00f3teses\u00a0e\u00a0o m\u00e9todo\u00a0Wolbachia,\u00a0que\u00a0evita que\u00a0o mosquito\u00a0Aedes\u00a0aegypti\u00a0transmita doen\u00e7as.\u00a0", 
+      "value": [
+        {
+          "children": [
+            {
+              "text": "A polilaminina \u00e9 um dos temas estrat\u00e9gicos do "
+            }, 
+            {
+              "children": [
+                {
+                  "text": "Comit\u00ea de Inova\u00e7\u00e3o da Anvisa"
+                }
+              ], 
+              "data": {
+                "target": "_blank", 
+                "title": null, 
+                "url": "https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa/2025/comite-de-inovacao-da-anvisa-comeca-a-funcionar-e-define-prioridades"
+              }, 
+              "type": "link"
+            }, 
+            {
+              "text": ", criado em 2025 para monitorar e apoiar a avalia\u00e7\u00e3o regulat\u00f3ria de produtos e tecnologias inovadoras, garantindo que a regula\u00e7\u00e3o facilite o desenvolvimento de solu\u00e7\u00f5es que melhorem a qualidade de vida da popula\u00e7\u00e3o. Outros assuntos priorit\u00e1rios para o Comit\u00ea s\u00e3o: a vacina contra a Chikungunya, endopr\u00f3teses e o m\u00e9todo Wolbachia, que evita que o mosquito "
+            }, 
+            {
+              "children": [
+                {
+                  "text": "Aedes aegypti"
+                }
+              ], 
+              "type": "em"
+            }, 
+            {
+              "children": [
+                {
+                  "text": " "
+                }
+              ], 
+              "type": "em"
+            }, 
+            {
+              "text": "transmita doen\u00e7as. "
+            }
+          ], 
+          "type": "p"
+        }
+      ]
+    }, 
+    "fd8600fe-530e-456c-bc0e-7ffb3751aa55": {
+      "@type": "slate", 
+      "plaintext": "Quando isso acontece, a empresa patrocinadora deve obrigatoriamente submeter um pedido de autoriza\u00e7\u00e3o regulat\u00f3ria \u00e0\u00a0Anvisa\u00a0para dar prosseguimento ao desenvolvimento cl\u00ednico da nova subst\u00e2ncia candidata a medicamento ou vacina.\u00a0", 
+      "value": [
+        {
+          "children": [
+            {
+              "text": "Quando isso acontece, a empresa patrocinadora deve obrigatoriamente submeter um pedido de autoriza\u00e7\u00e3o regulat\u00f3ria \u00e0 Anvisa para dar prosseguimento ao desenvolvimento cl\u00ednico da nova subst\u00e2ncia candidata a medicamento ou vacina. "
+            }
+          ], 
+          "type": "p"
+        }
+      ]
+    }
+  }, 
+  "blocks_layout": {
+    "items": [
+      "cd6ad916-43ea-4aea-ae41-2dacb5e8992e", 
+      "55927c7d-7b30-4096-8eb6-ef5db137b38a", 
+      "74251e0b-aeca-4ad0-b2d8-03359aa4268f", 
+      "4eb6258c-8344-439c-a700-dd210ca32dfa", 
+      "eab5b8bf-8758-4510-b49d-cd26dc977835", 
+      "e9fae7ef-f133-4b02-bb69-99fbfabb4ae8", 
+      "0efcdaba-f0c4-4790-bb05-c47307847039", 
+      "b1bdc4cc-44e2-47dc-a18c-e9ad4493232f", 
+      "7d92f8b7-d26b-4e91-8970-191f9269dd50", 
+      "f956b1ad-dbfb-4156-8b20-4c22ad7478f2", 
+      "1cdf69bd-e389-48b1-8e96-4b0588bdeda4", 
+      "3597a4d5-a02f-46e4-b241-e504dfd56ccc", 
+      "286fc400-2928-47b3-8646-e804b75de9e1", 
+      "9bd240b3-b891-4774-b1e9-afa451a14ca8", 
+      "acc555b0-4953-4afb-9be2-e21f1a713966", 
+      "315d1b0b-be33-42ab-a68a-337d7d070a99", 
+      "b0842af4-4a41-428b-a8cd-3a75bafcd364", 
+      "914cdde1-3303-48e5-a6c7-75580d809558", 
+      "4a937995-bd99-47a4-b014-7ee3c06b90bd", 
+      "57b967e7-f602-4a0f-b260-89159146ee43", 
+      "29a89757-6758-4bf6-8aea-fae0aacdeb6d", 
+      "770f8cc2-e3d9-4e5e-a4cf-2b2bdd930c4e", 
+      "86fd6f78-d2e2-424d-92d0-703c9cd7369e", 
+      "1be49ae6-3e9d-4c07-ae2e-e39313bd3bf0", 
+      "222652d7-dba6-4c51-a9c7-86bb4a23ee34", 
+      "d6f6e6a1-ec5b-4acb-ab0e-24b6780f3abc", 
+      "fd8600fe-530e-456c-bc0e-7ffb3751aa55", 
+      "73d2351d-d7b4-49b4-88c1-9ad7c2fa91ab", 
+      "50ff3782-e7b7-4977-9523-ade39d859368", 
+      "207c2821-25d1-43a4-a78c-5fdd29466136"
+    ]
+  }, 
+  "category": {
+    "categoriaSuperior": null, 
+    "classeCssCategoria": "fas fa-heartbeat", 
+    "descricaoCategoria": "Servi\u00e7os relacionados ao apoio no atendimento e preven\u00e7\u00e3o a problemas de sa\u00fade, entre outros.", 
+    "id": 15, 
+    "indicadorCategoriaRestrita": false, 
+    "nomeCategoria": "Sa\u00fade e Vigil\u00e2ncia Sanit\u00e1ria", 
+    "statusCategoria": "P"
+  }, 
+  "changeNote": "", 
+  "contributors": [], 
+  "created": "2026-01-05T10:41:49+00:00", 
+  "creators": [], 
+  "description": "Esta ser\u00e1 a primeira fase para avalia\u00e7\u00e3o de seguran\u00e7a do uso do medicamento experimental em pacientes que sofreram trauma raquimedular agudo.", 
+  "effective": "2026-01-05T11:00:00+00:00", 
+  "expires": null, 
+  "id": "anvisa-autoriza-pesquisa-clinica-para-avaliar-a-seguranca-do-uso-de-polilaminina-em-humanos", 
+  "image": null, 
+  "image_caption": [], 
+  "is_folderish": true, 
+  "items": [], 
+  "items_total": 0, 
+  "language": {
+    "title": "Portugu\u00eas (Brasil)", 
+    "token": "pt-br"
+  }, 
+  "layout": "newsitem_view", 
+  "lock": {
+    "locked": false, 
+    "stealable": true
+  }, 
+  "modified": "2026-01-05T19:53:48+00:00", 
+  "nav_title": null, 
+  "next_item": {}, 
+  "parent": {
+    "@id": "https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa/2026", 
+    "@type": "Document", 
+    "description": "", 
+    "effective": "2025-12-31T16:00:00+00:00", 
+    "end": null, 
+    "getObjSize": null, 
+    "getRemoteUrl": null, 
+    "head_title": null, 
+    "image_field": null, 
+    "image_scales": {}, 
+    "mime_type": null, 
+    "nav_title": null, 
+    "review_state": "published", 
+    "start": null, 
+    "title": "2026", 
+    "type_title": "P\u00e1gina"
+  }, 
+  "preview_caption_link": null, 
+  "preview_image_link": null, 
+  "previous_item": {}, 
+  "relatedItems": [], 
+  "review_state": "published", 
+  "rights": "", 
+  "subjects": [
+    "pesquisa cl\u00ednica", 
+    "inova\u00e7\u00e3o", 
+    "polilaminina", 
+    "avalia\u00e7\u00e3o de seguran\u00e7a "
+  ], 
+  "subtitle": "INOVA\u00c7\u00c3O", 
+  "title": "Anvisa autoriza pesquisa cl\u00ednica para avaliar a seguran\u00e7a do uso da polilaminina em humanos", 
+  "type_title": "Not\u00edcia", 
+  "uf_noticia": null, 
+  "version": "current", 
+  "versioning_enabled": true, 
+  "working_copy": null, 
+  "working_copy_of": null
+}

@@ -323,6 +323,69 @@ correções. Métricas agregadas reais (`chat_metrica`, 40 respostas
 incluindo testes manuais): latência média ~9,8s, ~3,5 chunks recuperados
 por resposta, 87% com citação de norma na resposta, custo total ~US$0,40.
 
+### M5 — Tempo real (INLABS + notícias + módulo 630 + scheduler + endpoints)
+
+- **Módulo 630 (Consultas Públicas)**: `cod_menu=9789` = "CONSULTA PÚBLICA
+  ATIVA (19)", achado testando de verdade contra o portal — bate exato com
+  o "19 CP abertas" do enunciado. Guardado na tabela `noticia`
+  (`categoria='consulta_publica'`, como o schema já previa), com duas
+  colunas novas (`prazo_inicio`/`prazo_fim`, migration `0003`) extraídas do
+  campo `#prazoContribuicao` ("DD/MM/AAAA a DD/MM/AAAA") de cada página de
+  detalhe, com suporte a prorrogação (`#prorrogacaoPrazo`). Rodado de
+  verdade: 19 CPs carregadas.
+- **Notícias gov.br — o RSS documentado no briefing está morto (404)**.
+  Pior: o `window.__data` embutido no HTML ignora `b_start` no SSR (sempre
+  devolve a página 1, não importa o que a URL peça — confirmado comparando
+  respostas). A alternativa real: o Plone expõe sua própria API REST no
+  mesmo domínio, sob `++api++`
+  (`https://www.gov.br/anvisa/++api++/pt-br/...`), que **essa sim** pagina
+  de verdade. Cada notícia é um item Volto em blocos (`blocks` +
+  `blocks_layout`); só os tipos `html` (stripa tags com `selectolax`) e
+  `slate` (já vem com `plaintext` pronto) carregam texto de corpo. Carga
+  inicial rodada de verdade: **105 notícias** (jan–mar/2026); resto do ano
+  corrente e anos anteriores (2023–2025 também têm conteúdo, confirmado)
+  ficam para as próximas execuções incrementais do job diário — mesmo
+  padrão de completude gradual aceito no M2.
+- **INLABS — login/download já validados no M0**; o que faltava era o
+  parser. Achado real ao escrever `app/ingest/inlabs.py`: **um parser
+  HTML5 (`selectolax`) não é seguro para esse XML** — `<![CDATA[...]]>`
+  dentro de tag desconhecida vira "bogus comment" pela tokenização HTML5,
+  apagando o conteúdo de `<Identifica>`/`<Texto>`. Trocado para
+  `xml.etree.ElementTree` (stdlib), que respeita CDATA — confirmado com as
+  duas amostras reais do M0. Rodado de verdade contra 11/09/2026: 18
+  matérias da ANVISA (DO1: 14 Resolução-RE + 1 Aresto, DO2: 3 Portarias,
+  DO3: 1 Aviso de Licitação). **Achado de negócio, não bug**: essas
+  "Resolução-RE" têm numeração própria (~3.500) bem mais alta que a série
+  RES/RE que o módulo 310 cataloga (~1.020 em 2026) — 0 vínculos com
+  `norma` é o resultado correto, não um linker quebrado.
+- **Scheduler** (`app/scheduler.py`): APScheduler, cron 06:00
+  `America/Sao_Paulo`, dispara os 4 scripts de carga **como subprocesso**
+  (não importando `main()` direto) — isola falha de um pool asyncpg de uma
+  fonte do loop de eventos da API e das outras fontes. Não existe, em
+  nenhuma fonte documentada, um endpoint de "o que mudou desde ontem" —
+  por isso o módulo 310 é re-rodado por inteiro todo dia (idempotente via
+  upsert). Liga junto com a API só se `DATABASE_URL` estiver configurada
+  (`scheduler_habilitado=true` por padrão, desligável no `.env` — útil
+  para rodar a API em ambiente de teste sem disparar ingestão).
+- **Endpoints novos** (`app/timeline.py` + rotas em `app/main.py`):
+  - `GET /timeline?dias=30&limite=100` — união (`UNION ALL`) de
+    norma/noticia/dou_materia por data, mais recente primeiro. Validado
+    com todas as 4 fontes aparecendo (`norma`, `noticia`,
+    `consulta_publica`, `dou`) numa janela de 365 dias contra o Supabase
+    real.
+  - `GET /consultas-publicas?apenas_abertas=true` — as CPs do módulo 630
+    com prazo, ordenadas por prazo mais próximo primeiro.
+  - `GET /health/fontes` — última execução de cada fonte em
+    `job_execucao` (status, itens novos, erro). O `/health` original
+    virou liveness pura (não toca banco); saúde das fontes é endpoint
+    separado, para não confundir "API no ar" com "ingestão saudável".
+
+Resultado: módulo 630 (19 CPs), notícias gov.br (105, incremental),
+INLABS (18 matérias/dia testado), scheduler armado, 3 endpoints novos
+validados contra o Supabase real. Pendente: backfill completo de notícias
+de anos anteriores (fica incremental, não bloqueia); vínculo DOU→norma só
+cobre os tipos que o módulo 310 já cataloga.
+
 ## Milestones (status)
 
 - [x] M0 — Reconhecimento das fontes.
@@ -333,7 +396,8 @@ por resposta, 87% com citação de norma na resposta, custo total ~US$0,40.
 - [x] M3 — Chunking + embeddings + busca híbrida. 27.355 chunks
       embeddados, busca validada com as perguntas de exemplo do briefing.
 - [x] M4 — Chat RAG (`/chat` + golden QA). 33/33 perguntas passando.
-- [ ] M5 — Tempo real (INLABS, RSS/notícias, módulo 630, scheduler, `/timeline`).
+- [x] M5 — Tempo real (INLABS, notícias gov.br, módulo 630, scheduler,
+      `/timeline`, `/consultas-publicas`, `/health/fontes`).
 - [ ] M6 — Frontend Next.js.
 - [ ] M7 — Alertas.
 - [ ] M8 (opcional) — Ponte com licitações.

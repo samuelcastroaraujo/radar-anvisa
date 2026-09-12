@@ -75,7 +75,7 @@ docker run --env-file .env -p 8000:8000 radar-anvisa
 
 ## Status
 
-M1 a M4 prontos: o chat já responde de verdade, via `POST /chat`, com as
+M1 a M5 prontos: o chat já responde de verdade, via `POST /chat`, com as
 regras do produto (cita fonte/data/link, avisa revogação na primeira linha,
 nunca inventa número de norma). Base populada no Supabase — 4.579 normas,
 quase 12 mil relações entre elas (quem altera, revoga, substitui quem) e
@@ -83,6 +83,10 @@ mais de 27 mil trechos com embedding para busca híbrida. Validado com 33
 perguntas reais (`tests/golden_qa.yaml`), incluindo os dois testes mais
 críticos: perguntar por uma RDC que não existe (resposta certa: "não
 encontrei") e por uma norma revogada (resposta certa: avisa a revogação
-antes de qualquer outra coisa). Ainda faltam frontend e atualização
-automática diária (M5+). Detalhes de arquitetura, decisões e os relatórios
-completos em `CLAUDE.md`.
+antes de qualquer outra coisa).
+
+Atualização automática diária às 06:00 (scheduler + INLABS/DOU + notícias
+gov.br + consultas públicas), com `GET /timeline` (linha do tempo unificada
+das 4 fontes), `GET /consultas-publicas` e `GET /health/fontes` (saúde de
+cada fonte de ingestão). Ainda falta o frontend (M6). Detalhes de
+arquitetura, decisões e os relatórios completos em `CLAUDE.md`.

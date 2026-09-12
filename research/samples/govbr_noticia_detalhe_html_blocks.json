@@ -1,0 +1,177 @@
+{
+  "@components": {
+    "actions": {
+      "@id": "https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa/2026/anvisa-publica-lista-atualizada-das-denominacoes-comuns-brasileiras/@actions"
+    }, 
+    "aliases": {
+      "@id": "https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa/2026/anvisa-publica-lista-atualizada-das-denominacoes-comuns-brasileiras/@aliases"
+    }, 
+    "breadcrumbs": {
+      "@id": "https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa/2026/anvisa-publica-lista-atualizada-das-denominacoes-comuns-brasileiras/@breadcrumbs"
+    }, 
+    "contextnavigation": {
+      "@id": "https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa/2026/anvisa-publica-lista-atualizada-das-denominacoes-comuns-brasileiras/@contextnavigation"
+    }, 
+    "navigation": {
+      "@id": "https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa/2026/anvisa-publica-lista-atualizada-das-denominacoes-comuns-brasileiras/@navigation"
+    }, 
+    "navroot": {
+      "@id": "https://www.gov.br/anvisa/pt-br", 
+      "@type": "LRF", 
+      "title": "Portugu\u00eas (Brasil)"
+    }, 
+    "translations": {
+      "@id": "https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa/2026/anvisa-publica-lista-atualizada-das-denominacoes-comuns-brasileiras/@translations"
+    }, 
+    "types": {
+      "@id": "https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa/2026/anvisa-publica-lista-atualizada-das-denominacoes-comuns-brasileiras/@types"
+    }, 
+    "workflow": {
+      "@id": "https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa/2026/anvisa-publica-lista-atualizada-das-denominacoes-comuns-brasileiras/@workflow"
+    }
+  }, 
+  "@id": "https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa/2026/anvisa-publica-lista-atualizada-das-denominacoes-comuns-brasileiras", 
+  "@type": "News Item", 
+  "UID": "450836c65efa4af7af0de9af248f95f0", 
+  "allow_discussion": false, 
+  "alt": [], 
+  "blocks": {
+    "208a3b29-c11f-468a-91d2-46f9ac88232d": {
+      "@type": "html", 
+      "html": "<p class=\"\" style=\"text-align: justify;\">Nesta atualiza\u00e7\u00e3o, foram inclu\u00eddas 22 novas DCBs e tr\u00eas foram alteradas.</p>"
+    }, 
+    "4ce99902-663e-45ac-9464-be72e0f6af26": {
+      "@type": "html", 
+      "html": "<p class=\"\" style=\"text-align: justify;\"><span>Denomina\u00e7\u00e3o Comum Brasileira\u202f(DCB) \u00e9 a denomina\u00e7\u00e3o do f\u00e1rmaco ou princ\u00edpio ativo aprovada pelo \u00f3rg\u00e3o federal respons\u00e1vel pela vigil\u00e2ncia sanit\u00e1ria (</span><span><a href=\"http://www.planalto.gov.br/ccivil_03/Leis/L9787.htm\">Lei\u202f9.787/1999</a></span><span>). Atualmente, com o registro eletr\u00f4nico,&nbsp;o termo&nbsp;adquiriu um conceito mais amplo e inclui tamb\u00e9m a denomina\u00e7\u00e3o de insumos inativos, soros\u202fhiperimunes\u202fe vacinas, radiof\u00e1rmacos, plantas medicinais, subst\u00e2ncias homeop\u00e1ticas e biol\u00f3gicas.\u202f\u202f</span></p>"
+    }, 
+    "4eb6258c-8344-439c-a700-dd210ca32dfa": {
+      "@type": "dateSocialShareBlock", 
+      "fixed": true, 
+      "required": true
+    }, 
+    "55927c7d-7b30-4096-8eb6-ef5db137b38a": {
+      "@type": "title", 
+      "fixed": true, 
+      "required": true
+    }, 
+    "74251e0b-aeca-4ad0-b2d8-03359aa4268f": {
+      "@type": "description", 
+      "fixed": true
+    }, 
+    "9c2a699d-0c34-4838-90cc-ce0dc4bdcc47": {
+      "@type": "html", 
+      "html": "<p style=\"text-align: justify;\">A Anvisa informa que foi atualizada a lista das Denomina\u00e7\u00f5es Comuns Brasileiras (DCBs), oficializada pela publica\u00e7\u00e3o da&nbsp;<a class=\"external-link\" data-tippreview-enabled=\"false\" data-tippreview-image=\"\" data-tippreview-title=\"\" href=\"https://anvisalegis.datalegis.net/action/UrlPublicasAction.php?acao=abrirAtoPublico&amp;num_ato=00000416&amp;sgl_tipo=INM&amp;sgl_orgao=DC/ANVISA/MS&amp;vlr_ano=2025&amp;seq_ato=000&amp;cod_modulo=134&amp;cod_menu=1696\" target=\"_self\" title=\"\">Instru\u00e7\u00e3o Normativa \u2013 IN 416, de 17 de dezembro de 2025<b></b></a>.</p>"
+    }, 
+    "c7c53bc5-2c36-443a-b95d-2db82db84074": {
+      "@type": "html", 
+      "html": "<p class=\"\" style=\"text-align: justify;\">Outras informa\u00e7\u00f5es est\u00e3o dispon\u00edveis no Processo SEI 25351.900083/2025-46.</p>"
+    }, 
+    "cd6ad916-43ea-4aea-ae41-2dacb5e8992e": {
+      "@type": "subtitleBlock", 
+      "fixed": true
+    }, 
+    "d6472b63-7bfe-495c-88d0-f2f904c8f65b": {
+      "@type": "html", 
+      "html": "<p class=\"\" style=\"text-align: justify;\">A Lista Consolidada das DCBs est\u00e1 dispon\u00edvel na Biblioteca Digital da Anvisa:&nbsp;<span><span style=\"text-decoration: underline;\"><a class=\"x_OWAAutoLink\" data-auth=\"NotApplicable\" data-linkindex=\"0\" href=\"http://bibliotecadigital.anvisa.gov.br/jspui/handle/anvisa/19593\" id=\"OWA1f3db4b4-fbc2-3035-890a-0d3125ea7de7\" rel=\"noopener noreferrer\" target=\"_blank\" title=\"http://bibliotecadigital.anvisa.gov.br/jspui/handle/anvisa/19593\">http://bibliotecadigital.anvisa.gov.br/jspui/handle/anvisa/19593</a></span></span>.</p>"
+    }, 
+    "df21d0dc-1db1-464a-9b25-e7468e6fd286": {
+      "@type": "html", 
+      "html": "<p class=\"x_elementToProof\" style=\"text-align: justify;\"><strong>DCB</strong></p>"
+    }, 
+    "e9fae7ef-f133-4b02-bb69-99fbfabb4ae8": {
+      "@type": "leadimage", 
+      "fixed": true
+    }, 
+    "eab5b8bf-8758-4510-b49d-cd26dc977835": {
+      "@type": "textToSpeech", 
+      "fixed": true
+    }
+  }, 
+  "blocks_layout": {
+    "items": [
+      "cd6ad916-43ea-4aea-ae41-2dacb5e8992e", 
+      "55927c7d-7b30-4096-8eb6-ef5db137b38a", 
+      "74251e0b-aeca-4ad0-b2d8-03359aa4268f", 
+      "4eb6258c-8344-439c-a700-dd210ca32dfa", 
+      "eab5b8bf-8758-4510-b49d-cd26dc977835", 
+      "e9fae7ef-f133-4b02-bb69-99fbfabb4ae8", 
+      "9c2a699d-0c34-4838-90cc-ce0dc4bdcc47", 
+      "d6472b63-7bfe-495c-88d0-f2f904c8f65b", 
+      "208a3b29-c11f-468a-91d2-46f9ac88232d", 
+      "c7c53bc5-2c36-443a-b95d-2db82db84074", 
+      "df21d0dc-1db1-464a-9b25-e7468e6fd286", 
+      "4ce99902-663e-45ac-9464-be72e0f6af26"
+    ]
+  }, 
+  "category": {
+    "categoriaSuperior": null, 
+    "classeCssCategoria": "fas fa-heartbeat", 
+    "descricaoCategoria": "Servi\u00e7os relacionados ao apoio no atendimento e preven\u00e7\u00e3o a problemas de sa\u00fade, entre outros.", 
+    "id": 15, 
+    "indicadorCategoriaRestrita": false, 
+    "nomeCategoria": "Sa\u00fade e Vigil\u00e2ncia Sanit\u00e1ria", 
+    "statusCategoria": "P"
+  }, 
+  "changeNote": "", 
+  "contributors": [], 
+  "created": "2026-01-02T20:15:40+00:00", 
+  "creators": [], 
+  "description": "Nesta atualiza\u00e7\u00e3o, foram inclu\u00eddas 22 novas DCBs e tr\u00eas foram alteradas.", 
+  "effective": "2026-01-02T20:15:00+00:00", 
+  "expires": null, 
+  "id": "anvisa-publica-lista-atualizada-das-denominacoes-comuns-brasileiras", 
+  "image": null, 
+  "image_caption": [], 
+  "is_folderish": true, 
+  "items": [], 
+  "items_total": 0, 
+  "language": {
+    "title": "Portugu\u00eas (Brasil)", 
+    "token": "pt-br"
+  }, 
+  "layout": "newsitem_view", 
+  "lock": {
+    "locked": false, 
+    "stealable": true
+  }, 
+  "modified": "2026-01-05T11:51:57+00:00", 
+  "nav_title": null, 
+  "next_item": {}, 
+  "parent": {
+    "@id": "https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa/2026", 
+    "@type": "Document", 
+    "description": "", 
+    "effective": "2025-12-31T16:00:00+00:00", 
+    "end": null, 
+    "getObjSize": null, 
+    "getRemoteUrl": null, 
+    "head_title": null, 
+    "image_field": null, 
+    "image_scales": {}, 
+    "mime_type": null, 
+    "nav_title": null, 
+    "review_state": "published", 
+    "start": null, 
+    "title": "2026", 
+    "type_title": "P\u00e1gina"
+  }, 
+  "preview_caption_link": null, 
+  "preview_image_link": null, 
+  "previous_item": {}, 
+  "relatedItems": [], 
+  "review_state": "published", 
+  "rights": "", 
+  "subjects": [
+    "denomina\u00e7\u00e3o comum brasileira", 
+    "DCB", 
+    "lista atualizada"
+  ], 
+  "subtitle": "DCB", 
+  "title": "Anvisa publica lista atualizada das Denomina\u00e7\u00f5es Comuns Brasileiras", 
+  "type_title": "Not\u00edcia", 
+  "uf_noticia": null, 
+  "version": "current", 
+  "versioning_enabled": true, 
+  "working_copy": null, 
+  "working_copy_of": null
+}

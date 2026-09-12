@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     # Aplicação
     environment: str = "development"
     crawl_user_agent: str = "RadarAnvisaBot/1.0 (+contato: mba5@nutropolis.com.br)"
+    # Job diário 06:00 BRT (seção 5). Desligável via .env — útil pra rodar a
+    # API sem disparar ingestão (ex.: ambiente de teste) sem mexer no código.
+    scheduler_habilitado: bool = True
 
 
 @lru_cache

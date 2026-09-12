@@ -19,6 +19,9 @@ from app.config import get_settings
 from app.ingest.anvisalegis import AnvisaLegisClient
 from app.ingest.participacao_social import carregar_cps_ativas, upsert_consulta_publica
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 
 async def main() -> None:
     settings = get_settings()

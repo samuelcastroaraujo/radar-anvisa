@@ -516,6 +516,79 @@ schema já previa essa categoria — só que sem coluna de prazo. Extensão
 não-destrutiva do schema: `noticia.prazo_inicio`/`prazo_fim` (ver
 `supabase/migrations/0003_participacao_social.sql`).
 
+## Addendum M5 — notícias gov.br: o RSS morreu, a API REST do Plone não
+
+A seção 2 documentava só o `window.__data` embutido no HTML (SSR). Ao
+implementar o ingestor de verdade apareceu um problema real: **o `b_start`
+da URL é ignorado no SSR** — `?b_start=25`, `?b_start=50` etc. sempre
+devolvem o `window.__data` da página 1 (confirmado comparando os 3 primeiros
+itens de cada resposta, idênticos). Sem isso, dava pra "paginar" só a
+primeira página pra sempre.
+
+Solução real e testada: o backend Plone expõe sua própria API REST no
+mesmo domínio, sob `++api++`, e essa sim respeita `b_start`:
+
+```
+GET https://www.gov.br/anvisa/++api++/pt-br/assuntos/noticias-anvisa/{ano}?b_start=N
+```
+
+Devolve exatamente o mesmo JSON do `window.__data` (`items`, `items_total`,
+`batching`), mas paginação de verdade. O mesmo padrão funciona pro detalhe
+de uma notícia (troca o path por baixo de `++api++`). `Accept:
+application/json` sozinho, sem o prefixo `++api++`, **não funciona** — o
+servidor ignora o header e devolve HTML de qualquer forma (também
+confirmado com requisição real).
+
+Cada notícia é um item Volto com corpo em **blocos** (`blocks` +
+`blocks_layout.items`, que dá a ordem). Dois tipos de bloco carregam texto
+de verdade: `html` (precisa stripar tags — usamos `selectolax` aqui, que é
+apropriado porque a entrada JÁ é HTML de verdade, ao contrário do XML do
+INLABS abaixo) e `slate` (vem com um campo `plaintext` pronto, não precisa
+nem navegar a árvore `value`). Blocos como `title`/`description`/
+`leadimage`/`textToSpeech`/`dateSocialShareBlock` são decorativos/redundantes
+com campos que já vêm soltos no JSON (`title`, `description`, `effective`)
+e são ignorados.
+
+A listagem do ano mistura notícias de verdade com anexos soltos (ex.: um
+PDF de notificação hospedado como item da mesma pasta) — filtrado pela
+extensão no fim da URL (`eh_noticia_de_verdade`).
+
+Anos com conteúdo confirmados por requisição real: 2023 (610 itens), 2024
+(630), 2025 (679), 2026 (572 e crescendo — ano corrente). 2027 → 404.
+
+Estratégia de carga (`scripts/carga_noticias_govbr.py`): a listagem vem em
+ordem decrescente de publicação (mais recente primeiro), então o job diário
+pagina só até achar uma notícia cujo hash de conteúdo já está gravado — não
+precisa repaginar o ano inteiro toda vez. Carga inicial rodada de verdade
+em 12/09/2026: **105 notícias gravadas** (jan–mar/2026) antes de considerar
+suficiente para validar o pipeline; completar o restante do ano corrente
+(e anos anteriores) é incremental e barato — fica pra próximas execuções
+do job diário, mesmo padrão do "12 revogadas faltantes" aceito no M2.
+
+## Addendum M5 — INLABS: XML de verdade, não HTML
+
+A seção 3 já validava login/download/encoding no M0. Ao escrever o parser
+apareceu um erro real: **um parser HTML5 (selectolax) não é seguro para
+esse XML** — `<![CDATA[...]]>` dentro de uma tag desconhecida (`<Identifica>`,
+`<Texto>`) vira um "bogus comment" pela regra de tokenização do HTML5
+(`<!` sem ser um comentário/doctype válido é tratado como comentário até o
+próximo `>`), e o conteúdo desaparece do `.text()`. Confirmado rodando
+contra as duas amostras reais salvas no M0: `<Identifica>` saía **vazio**.
+Trocado para `xml.etree.ElementTree` (stdlib) — que respeita CDATA de
+verdade — e as mesmas amostras passaram a extrair corretamente.
+
+**Achado de negócio real, não um bug**: as "matérias da ANVISA" no DOU
+(filtradas por `artCategory`) incluem uma série de atos "RESOLUÇÃO-RE"
+assinados por gerências específicas (ex.: GGFIS, GGREC) com numeração
+própria e bem mais alta (ex.: RE nº 3.547/2026) do que a série de
+RDC/RE que o módulo 310 cataloga (que em 2026 estava em ~1.020). Rodando o
+job de verdade contra 11/09/2026: 18 matérias da ANVISA encontradas (DO1:
+14 Resolução-RE + 1 Aresto, DO2: 3 Portarias, DO3: 1 Aviso de Licitação),
+**0 vinculadas** a uma norma existente em `norma` — o vínculo automático
+(`dou_materia.norma_id`) só vai acender quando o próprio módulo 310 também
+cobrir essa série (não coberto até o M5); documentado aqui para não
+confundir "0 vínculos" com um linker quebrado.
+
 ## Resumo do que ficou pendente (nada foi inventado além disto)
 
 1. **`informes-de-seguranca`**: mudou para SPA em `consultas.anvisa.gov.br`;
@@ -532,9 +605,10 @@ essas duas últimas invertidas em relação ao que constava aqui antes) foram
 confirmadas com requisição real e usadas para validar a carga histórica —
 ver Addendum M2 abaixo e o resultado final em `CLAUDE.md`.
 
-**Resolvido no M5:** módulo 630 (consultas públicas) — ver Addendum M5
-acima. Onde exatamente o "prazo" aparece (`#prazoContribuicao`) estava
-pendente desde o M0.
+**Resolvido no M5:** módulo 630 (consultas públicas), notícias gov.br (RSS
+morto → API REST `++api++` do Plone) e INLABS (login/download já validados
+no M0; parser trocado de HTML5 para XML de verdade) — ver os três
+Addendums M5 acima.
 
 Nenhum endpoint usado no código (a partir do M1) deve ir além do que está
 documentado e testado aqui. Qualquer ação nova (`acao=...`) encontrada durante
