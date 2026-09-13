@@ -21,6 +21,7 @@ import sys
 import time
 
 import asyncpg
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential_jitter
 
 from app.config import get_settings
 from app.ingest.anvisalegis import (
@@ -33,6 +34,41 @@ from app.ingest.persistencia import NormaIdCache, upsert_relacao
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
+
+@retry(
+    retry=retry_if_exception_type((asyncpg.exceptions.ConnectionDoesNotExistError, OSError)),
+    stop=stop_after_attempt(3),
+    wait=wait_exponential_jitter(initial=1, max=10),
+    reraise=True,
+)
+async def _gravar_com_retry(
+    pool: asyncpg.Pool,
+    norma_id: str,
+    texto: str,
+    hash_conteudo: str,
+    ato_minimo: AtoParseado,
+    relacoes: list,
+    cache: NormaIdCache,
+) -> int:
+    """Achado real rodando a carga completa: uma conexão do pool que fica
+    ociosa por minutos (o grosso do tempo por item é a requisição HTTP, não
+    o banco) apodrece e cai com `OSError: [WinError 121]` / `asyncpg.
+    ConnectionDoesNotExistError` — sem retry, isso derruba o job inteiro no
+    meio de uma rodagem de horas. `pool.acquire()` de novo já basta pra
+    pegar uma conexão nova/saudável do pool."""
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "update norma set texto_integral = $1, hash_conteudo = $2 where id = $3",
+            texto,
+            hash_conteudo,
+            norma_id,
+        )
+        gravadas = 0
+        for relacao in relacoes:
+            await upsert_relacao(conn, str(norma_id), ato_minimo, relacao, cache)
+            gravadas += 1
+        return gravadas
 
 
 async def main(limite: int | None) -> None:
@@ -106,17 +142,20 @@ async def main(limite: int | None) -> None:
                         status_vigencia="revogada",
                     )
 
-                    async with pool.acquire() as conn:
-                        await conn.execute(
-                            "update norma set texto_integral = $1, hash_conteudo = $2 "
-                            "where id = $3",
-                            texto,
-                            hash_conteudo,
-                            norma_id,
+                    try:
+                        total_relacoes_novas += await _gravar_com_retry(
+                            pool, str(norma_id), texto, hash_conteudo, ato_minimo, relacoes, cache
                         )
-                        for relacao in relacoes:
-                            await upsert_relacao(conn, str(norma_id), ato_minimo, relacao, cache)
-                            total_relacoes_novas += 1
+                    except (asyncpg.exceptions.ConnectionDoesNotExistError, OSError) as e:
+                        # 3 tentativas já falharam — não derruba o job inteiro
+                        # por causa de 1 item; ele continua 'pendente' (sem
+                        # texto_integral) e é pego numa próxima execução,
+                        # idempotente como o resto do script.
+                        print(
+                            f"  [erro, pulando] {indice.tipo_ato} {numero}/{indice.ano}: {e}",
+                            flush=True,
+                        )
+                        continue
 
                     total_atualizadas += 1
                     if total_atualizadas % 25 == 0:
