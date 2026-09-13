@@ -661,6 +661,47 @@ diretamente, só citada), não causado nem corrigido por este trabalho.
 1966, 600KB+) — deu `ReadTimeout` de verdade rodando a remediação.
 Aumentado pra 90s.
 
+### Backfill de texto das revogadas — resultado final e limite documentado da fonte
+
+`scripts/backfill_texto_revogadas.py` (ver docstring do próprio arquivo)
+precisou de 3 rodadas reais pra chegar ao resultado final:
+
+1. Primeira rodada crashou depois de ~3h por conexão de pool caindo
+   (`fix(backfill)`, ver commit — retry com backoff + skip-e-continua em
+   vez de derrubar o job inteiro).
+2. Reiniciada, rodou até o fim (`exited 0`) mas parou em 88,4% — o
+   `job_execucao` dessa execução (`iniciado_em` 01:01 UTC) nunca chegou a
+   marcar `terminado_em`/`status`, ficou `em_andamento` órfão (processo
+   morreu sem logar, provavelmente PC hibernou/terminal fechado no meio
+   da madrugada) — só percebido comparando com o processo real (nenhum
+   `python.exe` rodando) contra a contagem real do banco.
+3. Rodada final (`itens_novos=89`, 602s, `job_execucao` com `status='ok'`
+   de verdade): confirma platô de **328 normas revogadas (11,6% de 2.821)
+   que nunca vão ganhar `texto_integral` pelos endpoints do AnvisaLegis
+   conhecidos hoje** — não é falha de parsing, é ausência real na fonte.
+
+**Investigado e confirmado ao vivo, não só suposto**: as 328 têm
+`url_origem` = placeholder `"(referenciada, não crawleada)"` — ou seja,
+nenhuma delas nunca apareceu numa página de vigentes/revogadas que o
+crawler já visitou; existem no banco só porque são alvo de uma relação
+`revoga` de outro ato (regra da seção 5). Composição: 261 `RES`
+(Resolução simples, diferente de `RDC`), 42 `POR`, 9 `INM`, 5 `RDC`, e 11
+que nem são do módulo 310 (`LEI`/`DEC`/`DLG`/`PIM`/`DEP`/`GDT` — só
+existiriam no Planalto/INLABS). Exemplo checado ao vivo: `RES 2185/2023`
+não aparece nem na listagem de revogadas nem na de vigentes de 2023 no
+AnvisaLegis (buscas reais feitas contra o site, não suposição) — o tipo
+`RES` (ao contrário de `RDC`) parece ter cobertura inconsistente por ano
+nesse portal. Testado também `abrirLegislacao` (cod_menu 9434, a "página
+de busca" do módulo) como alternativa à navegação por ano — devolve a
+página cheia sem filtrar por tipo/número/ano via GET simples (o filtro
+real deve depender de uma chamada AJAX feita pelo JS da página, não
+inspecionada). **Decisão do usuário**: aceitar os 328 como limite
+documentado da fonte em vez de investigar mais fundo (reverse-engineering
+do JS via browser) — não bloqueia o uso da base.
+
+Resultado final aceito: **2.493 de 2.821 revogadas com `texto_integral`
+(88,4%)**.
+
 ## Milestones (status)
 
 - [x] M0 — Reconhecimento das fontes.
