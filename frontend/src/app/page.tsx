@@ -17,12 +17,6 @@ interface Mensagem {
   normas?: NormaCitada[];
 }
 
-const PERGUNTAS_EXEMPLO = [
-  "Qual RDC rege rotulagem nutricional de suplemento alimentar hoje?",
-  "A RDC 27/2010 ainda está vigente? Foi alterada por quê?",
-  "Tem consulta pública aberta sobre alimentos? Qual o prazo?",
-];
-
 export default function ChatPage() {
   const [mensagens, setMensagens] = useState<Mensagem[]>([]);
   const [pergunta, setPergunta] = useState("");
@@ -94,17 +88,6 @@ export default function ChatPage() {
             <p className="text-sm">
               Pergunte sobre normas, notícias ou consultas públicas da ANVISA.
             </p>
-            <div className="flex flex-col gap-2">
-              {PERGUNTAS_EXEMPLO.map((exemplo) => (
-                <button
-                  key={exemplo}
-                  onClick={() => void enviar(exemplo)}
-                  className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground"
-                >
-                  {exemplo}
-                </button>
-              ))}
-            </div>
           </div>
         )}
 
@@ -125,7 +108,7 @@ export default function ChatPage() {
         <Input
           value={pergunta}
           onChange={(e) => setPergunta(e.target.value)}
-          placeholder="Ex.: A RDC 27/2010 ainda está vigente?"
+          placeholder="Digite sua pergunta..."
           disabled={carregando}
         />
         <Button type="submit" disabled={carregando || !pergunta.trim()} size="icon">
