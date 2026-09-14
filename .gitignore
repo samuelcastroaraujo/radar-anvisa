@@ -21,6 +21,9 @@ out/
 data/raw/
 *.zip
 
+# cache local de scripts de remediação (ex.: corrigir_revoga_parcial_ponto.py)
+scripts/.cache_*.pkl
+
 # so
 .DS_Store
 Thumbs.db

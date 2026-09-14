@@ -7,6 +7,8 @@ import html
 from pathlib import Path
 
 from app.ingest.anvisalegis import (
+    _extrair_relacoes,
+    _revoga_so_um_dispositivo,
     parse_arvore_anos,
     parse_atos_revogados,
     parse_atos_vigentes,
@@ -86,6 +88,42 @@ def test_parse_atos_vigentes_extrai_relacao_de_revogacao_do_linktexto() -> None:
     assert all(r.invertida for r in parciais)
     # nenhuma revogação do ato INTEIRO deveria sair daqui — ele é vigente.
     assert not any(r.tipo == "revoga" and r.destino_ano == 2007 for r in ato.relacoes)
+
+
+def test_revoga_so_um_dispositivo_tolera_ponto_final_no_rotulo() -> None:
+    """Bug real de produção (RDC 243/2018, achado a pedido do usuário
+    comparando o sistema contra o portal ao vivo): "Parágrafo único." tem
+    ponto final antes do "(Revogado pela X)" no HTML real do AnvisaLegis —
+    diferente de "Art. 12 -"/"III -", que não têm ponto. Sem tolerar esse
+    `\\.?`, o regex de rótulo não batia e a revogação de um parágrafo único
+    virava `revoga` (total) em vez de `revoga_parcial`, promovendo a
+    própria RDC 243/2018 (genuinamente vigente) a 'revogada' por engano."""
+    assert _revoga_so_um_dispositivo("Parágrafo único.\xa0\n ")
+    assert _revoga_so_um_dispositivo("Parágrafo único.\xa0\n (")
+    # os padrões que já funcionavam continuam funcionando.
+    assert _revoga_so_um_dispositivo("Art. 12 -\xa0")
+    assert _revoga_so_um_dispositivo("III -\xa0")
+
+
+def test_extrair_relacoes_paragrafo_unico_com_ponto_vira_revoga_parcial() -> None:
+    """Mesmo bug, agora de ponta a ponta via `_extrair_relacoes`, com a
+    estrutura real de HTML do AnvisaLegis (rótulo + <em> + link) que
+    envolve o trecho "(Revogado pela X)" na página de um ato vigente."""
+    bloco = (
+        "Parágrafo único.\xa0"
+        '<em class="link-revogado" style="color: red !important;">'
+        "(Revogado pela "
+        "<a href=\"javascript:LinkTexto('RDC','00000843','000','2024',"
+        "'RDC/DC/ANVISA/MS','','','')\">"
+        "Resolução da Diretoria Colegiada - RDC nº 843, de 22/02/2024</a>)</em>"
+    )
+    relacoes = _extrair_relacoes(bloco)
+    assert len(relacoes) == 1
+    relacao = relacoes[0]
+    assert relacao.tipo == "revoga_parcial"
+    assert relacao.invertida is True
+    assert relacao.destino_tipo_ato == "RDC"
+    assert relacao.destino_ano == 2024
 
 
 def test_parse_atos_vigentes_nao_extrai_ementa_quando_ato_nao_tem() -> None:

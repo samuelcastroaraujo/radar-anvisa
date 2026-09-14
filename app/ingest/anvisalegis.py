@@ -98,9 +98,34 @@ VERBOS_RELACAO_PASSIVA: list[tuple[re.Pattern[str], str]] = [
 # Já "Revogada pela X" sozinho, sem rótulo de dispositivo antes (como
 # aparece no início da própria página de uma norma revogada por inteiro),
 # fica como `revoga` mesmo — é essa a leitura correta.
+#
+# **Bug real pego em produção (RDC 243/2018 e outras)**: o rótulo pode vir
+# seguido de um ponto final antes do "(Revogado pela X)" — "Parágrafo
+# único.\xa0\n (Revogado pela X)" é o padrão real do HTML do AnvisaLegis
+# pra parágrafo único (diferente de "Art. 12 -" e "III -", que não têm
+# ponto). Sem tolerar esse `\.?`, o regex não batia, `_revoga_so_um_
+# dispositivo` devolvia False, e a revogação de um parágrafo único virava
+# `revoga` (total) em vez de `revoga_parcial` — promovendo normas
+# genuinamente vigentes (confirmado ao vivo contra o portal) a 'revogada'.
+#
+# **Segundo bug real pego em produção (RDC 818/2023 e outras)**: "ANEXO
+# III" (revogação de um anexo inteiro, ex.: "ANEXO III\xa0\n\n\n(Revogado
+# pela X)") também não derruba o ato inteiro — mesma lógica de "Art. N" —
+# mas não estava na lista de rótulos reconhecidos. E "ANEXO" sozinho, sem
+# número (achado real, RDC 242/2018) — quando o ato só tem um anexo — por
+# isso o número depois de "anexo" é opcional aqui. Mesma coisa pra outras
+# unidades estruturais da hierarquia jurídica que também podem ser
+# revogadas por inteiro sem derrubar o ato (achado real, RDC 708/2022:
+# "CAPÍTULO XIX\n\n\n(Revogado pela X)") — capítulo/seção/subseção/título,
+# com ou sem numeral romano.
 _RE_ROTULO_DISPOSITIVO_ANTES = re.compile(
-    r"(art\.?\s*\d+[ºo°]?|§\s*\d+[ºo°]?|par[áa]grafo\s+[úu]nico|\b[a-z]\)?|\b[ivxlcm]+[).]|\b[ivxlcm]+\s*[-–—])"
-    r"\s*[-–—]?\s*\(?\s*$",
+    r"(art\.?\s*\d+[ºo°]?|§\s*\d+[ºo°]?|par[áa]grafo\s+[úu]nico"
+    r"|anexo\b(?:\s+[ivxlcm\d]+)?"
+    r"|(?:sub)?se[çc][ãa]o\b(?:\s+[ivxlcm\d]+)?"
+    r"|cap[íi]tulo\b(?:\s+[ivxlcm\d]+)?"
+    r"|t[íi]tulo\b(?:\s+[ivxlcm\d]+)?"
+    r"|\b[a-z]\)?|\b[ivxlcm]+[).]|\b[ivxlcm]+\s*[-–—])"
+    r"\.?\s*[-–—]?\s*\(?\s*$",
     re.I,
 )
 
@@ -353,12 +378,24 @@ def _extrair_relacoes(bloco_html: str) -> list[RelacaoBruta]:
         tipo, numero, _seq, ano, _orgao, cod_tipo, des_item, _des_item_fim = m.groups()
         if not tipo or not numero or not ano:
             continue
-        contexto = bloco_html[max(0, m.start() - 120) : m.start()]
+        # 120 chars bastava pra "Art. N -"/"III -" mas não pra "ANEXO III"
+        # (achado real, RDC 818/2023): o rótulo fica dentro de tags extras
+        # (</b>, <p class="link-revogado">, <em ...>) antes do "(Revogado
+        # pela X)" — só 193 chars de HTML bruto até o LinkTexto. Só o fim
+        # da janela importa (`_RE_ROTULO_DISPOSITIVO_ANTES` ancora em `$`),
+        # então alargar não arrisca pegar o rótulo errado de um dispositivo
+        # anterior.
+        contexto = bloco_html[max(0, m.start() - 300) : m.start()]
         contexto_texto = re.sub(r"<[^>]+>", " ", contexto)
         tipo_relacao = "referencia"
         invertida = False
         for padrao, nome in VERBOS_RELACAO_PASSIVA:
-            m_verbo = padrao.search(contexto_texto)
+            # última ocorrência na janela, não a primeira — com a janela
+            # alargada (300 chars) pra cobrir "ANEXO III", uma janela maior
+            # pode conter a menção de OUTRO dispositivo mais atrás; a mais
+            # próxima do LinkTexto atual é a que de fato o descreve.
+            ocorrencias = list(padrao.finditer(contexto_texto))
+            m_verbo = ocorrencias[-1] if ocorrencias else None
             if m_verbo:
                 if nome == "revoga" and _revoga_so_um_dispositivo(
                     contexto_texto[: m_verbo.start()]

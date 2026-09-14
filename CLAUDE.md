@@ -742,6 +742,86 @@ achar todas as normas com esse número, de qualquer tipo de ato.
 - `npm run lint`, `npm run build`, `uv run ruff`/`mypy`/`pytest -q` (39
   passando) todos verificados depois da mudança.
 
+### Segundo bug de direção `revoga` — rótulo de dispositivo incompleto (pós-M7, a pedido do usuário)
+
+Pedido original: usuário reportou que a RDC 243/2018 aparecia como
+"revogada" na busca (`q=243`), quando na verdade está **vigente com
+alterações** — mesmo requisito #1 do projeto (nunca tratar norma vigente
+como revogada).
+
+**Causa raiz**: `_RE_ROTULO_DISPOSITIVO_ANTES`
+(`app/ingest/anvisalegis.py`), usado por `_revoga_so_um_dispositivo` pra
+distinguir "revogação de UM dispositivo" (`revoga_parcial`, não derruba o
+ato) de "revogação do ato inteiro" (`revoga`, derruba), tinha dois
+problemas reais, os dois só visíveis processando texto de verdade (não em
+amostra pequena):
+
+1. **Ponto final depois do rótulo**: "Parágrafo único.\xa0\n (Revogado
+   pela X)" tem um "." entre o rótulo e o "(Revogado..." — diferente de
+   "Art. 12 -"/"III -", que não têm. Sem tolerar esse `\.?`, o regex não
+   batia e a revogação de um parágrafo único virava `revoga` (total).
+2. **"ANEXO N" não era um rótulo reconhecido**: revogar um anexo inteiro
+   (ex.: "ANEXO III\xa0\n\n\n(Revogado pela X)") também não derruba o ato
+   — mesma lógica de "Art. N" — mas só "Art./§/parágrafo único/inciso/
+   alínea" estavam na lista. Também "ANEXO" sozinho, sem número (RDC
+   242/2018, ato com um único anexo), e "CAPÍTULO N"/"SEÇÃO N"/"TÍTULO N"
+   (RDC 708/2022: "CAPÍTULO XIX\n\n\n(Revogado pela X)") — mesma lógica,
+   outros níveis da hierarquia jurídica (Título > Capítulo > Seção >
+   Subseção > Artigo).
+3. **Janela de contexto curta demais**: 120 chars de HTML bruto (antes de
+   tirar as tags) bastava pra "Art. 12 -" mas não pra "ANEXO III" quando
+   vem envolto em mais markup (`</b><p class="link-revogado"><em ...>`) —
+   193 chars reais no caso da RDC 818/2023. Alargada pra 300 chars;
+   seguro porque `_RE_ROTULO_DISPOSITIVO_ANTES` ancora no fim da janela
+   (`$`), então uma janela maior só arrisca sobrar contexto irrelevante no
+   início, nunca casar o rótulo errado. Junto, trocado pra pegar a
+   **última** ocorrência do verbo na janela (não a primeira) — com janela
+   maior, a primeira ocorrência podia ser de um dispositivo anterior.
+
+Sem essas correções, o pós-processamento (`_derivar_status_por_relacao`)
+promovia o ato (que é o ALVO da relação `revoga` invertida — ver bug
+irmão, seção "Correção crítica de status_vigencia") a 'revogada' por
+engano, mesmo ele sendo genuinamente vigente.
+
+**Por que persistia sozinho, mesmo corrigindo o regex**: `upsert_norma`
+tem um "ratchet" de propósito (uma vez 'revogada', nenhuma carga
+posterior reverte sozinha) — e a relação `revoga` errada, já gravada,
+sobrevive porque `on conflict ... do nothing` não troca `tipo='revoga'`
+por `'revoga_parcial'` numa chave já existente. Corrigido com
+`scripts/corrigir_revoga_parcial_ponto.py` (mesmo padrão de
+`corrigir_direcao_revoga.py`): recrawleia vigentes ao vivo com o parser
+corrigido, remove as relações antigas com classificação errada
+(`fonte='texto-listagem-revogadas'`), reinsere as corretas e reverte
+`status_vigencia` pra 'vigente' quando não sobra nenhum `revoga` real
+apontando pro ato.
+
+**Resultado real, rodado contra produção** (várias rodadas, convergindo à
+medida que cada variante de rótulo era achada): das 62 normas
+inicialmente achadas (`status_vigencia='revogada'` no banco mas
+confirmadas 'vigente' ao vivo), **58 corrigidas** — incluindo a própria
+RDC 243/2018 (o pedido original do usuário) e outras usadas em relatórios
+anteriores como prova do sistema (RDC 818/2023, RDC 723/2022, IN 161/2022,
+RDC 31/2010, RDC 915/2024, etc.).
+
+**Limite conhecido, não corrigido nesta rodada**: 4 normas continuam
+'revogada' por engano — `scripts/corrigir_revoga_parcial_ponto.py` estourou
+timeout nelas mesmo com 45s por ato (RDC 585/2021, RDC 81/2008, RDC
+17/2007, RDC 16/2007 — todas com muitas relações `invertida` pra
+reinserir, cada `get_or_create_norma_id` é uma ida à rede pelo túnel
+`railway run`/pooler do Supabase). Não é falha de classificação — é só
+questão de rodar de novo com mais paciência (ou de dentro do próprio
+Railway, sem o túnel). RDC 585/2021 em particular também tem um segundo
+problema, esse sim de classificação: uma tabela de anexo grande onde cada
+LINHA cita "(Revogado pela X)" sem nenhum rótulo formal de dispositivo
+antes (célula de tabela com nome de substância, não "Art. N"/"ANEXO N")
+— precisaria de parsing consciente da estrutura da tabela (contagem de
+`<tr>`/`<td>` envolvente), não só regex. Mesmo espírito do limite já
+documentado dos "328 normas sem texto_integral": aceito como pendência
+específica, não bloqueia o restante da correção. `scripts/
+corrigir_revoga_parcial_ponto.py` é idempotente e seguro de rodar de novo
+a qualquer momento pra tentar essas 4 (ou pegar normas novas que caiam no
+mesmo padrão).
+
 ## Milestones (status)
 
 - [x] M0 — Reconhecimento das fontes.
