@@ -73,8 +73,28 @@ export interface ItemTimeline {
   status_vigencia: string | null;
 }
 
-export async function buscarTimeline(dias = 30, limite = 100): Promise<ItemTimeline[]> {
-  return apiFetch<ItemTimeline[]>(`/timeline?dias=${dias}&limite=${limite}`, {
+export interface FiltroTimeline {
+  dias?: number;
+  limite?: number;
+  q?: string;
+  dataInicio?: string; // YYYY-MM-DD
+  dataFim?: string; // YYYY-MM-DD
+}
+
+export async function buscarTimeline(filtro: FiltroTimeline = {}): Promise<ItemTimeline[]> {
+  const { dias = 30, limite = 100, q, dataInicio, dataFim } = filtro;
+  const params = new URLSearchParams({ limite: String(limite) });
+  // `data_inicio`/`data_fim` (quando presentes) mandam mais que `dias` no
+  // backend — ver `app/main.py` — então só envia `dias` quando nenhuma
+  // data explícita foi escolhida.
+  if (dataInicio || dataFim) {
+    if (dataInicio) params.set("data_inicio", dataInicio);
+    if (dataFim) params.set("data_fim", dataFim);
+  } else {
+    params.set("dias", String(dias));
+  }
+  if (q && q.trim()) params.set("q", q.trim());
+  return apiFetch<ItemTimeline[]>(`/timeline?${params.toString()}`, {
     cache: "no-store",
   });
 }

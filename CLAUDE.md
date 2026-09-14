@@ -702,6 +702,46 @@ do JS via browser) — não bloqueia o uso da base.
 Resultado final aceito: **2.493 de 2.821 revogadas com `texto_integral`
 (88,4%)**.
 
+### Busca e filtro por data na `/timeline` (pós-M7, a pedido do usuário)
+
+Pedido: poder escolher qualquer data na linha do tempo e pesquisar por RDC,
+IN ou qualquer palavra-chave — em especial digitar um número (ex.: "243") e
+achar todas as normas com esse número, de qualquer tipo de ato.
+
+- `GET /timeline` ganhou três parâmetros novos, todos opcionais e
+  compatíveis com o comportamento antigo: `q` (substring case-insensitive),
+  `data_inicio`/`data_fim` (intervalo explícito de calendário). Quando
+  qualquer um dos dois últimos é passado, `dias` é ignorado — o lado que
+  faltar vira aberto (`data_inicio` ausente = 1900-01-01, `data_fim`
+  ausente = hoje). Validação nova: 422 se `data_inicio > data_fim`.
+- `buscar_timeline` (`app/timeline.py`) trocou o filtro relativo
+  (`now() - make_interval(...)`) por um intervalo `[data_inicio,
+  data_fim]` explícito calculado no endpoint — mais simples de testar e é
+  o mesmo código que atende tanto o atalho "últimos N dias" quanto um
+  período escolhido à mão. `q`, quando presente, filtra contra
+  `tipo_ato || numero || ano || ementa` pra `norma` (é por isso que
+  digitar "243" acha `RDC 243/2018` e `IN 243/2023` juntos — o número é
+  parte do texto buscado, não uma coluna separada), `titulo || resumo`
+  pra `noticia`, e só `titulo` pra `dou_materia` (não tem outro texto
+  curto pra somar).
+- Testado direto contra o Supabase de produção (não só unit test): `q=243`
+  com janela ampla devolveu exatamente `IN 243/2023` e `RDC 243/2018`;
+  `data_inicio=2018-01-01&data_fim=2018-12-31&q=RDC` devolveu só normas
+  RDC publicadas em 2018, mais recente primeiro; intervalo invertido
+  devolveu 422 como esperado.
+- Frontend (`frontend/src/app/timeline/page.tsx`): formulário `GET` puro
+  (sem JS de cliente — consistente com o resto da página, que já mudava
+  `dias` via `<Link>`) com campo de busca e dois `<input type="date">`.
+  Atalhos de "7/30/90/365 dias" continuam existindo; ao digitar uma
+  palavra-chave sem escolher período explícito, o cliente manda `dias`
+  bem alto (3650, o teto que o backend aceita) em vez de 30 — do
+  contrário "pesquisar 243" não acharia a RDC 243/2018 (mais de 30 dias
+  atrás) e pareceria quebrado. `lib/api.ts::buscarTimeline` trocou de
+  posicional pra um objeto de filtro (`FiltroTimeline`) — único call site
+  já atualizado.
+- `npm run lint`, `npm run build`, `uv run ruff`/`mypy`/`pytest -q` (39
+  passando) todos verificados depois da mudança.
+
 ## Milestones (status)
 
 - [x] M0 — Reconhecimento das fontes.

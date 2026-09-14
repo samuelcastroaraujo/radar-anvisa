@@ -23,11 +23,24 @@ class ItemTimeline:
     status_vigencia: str | None = None
 
 
-async def buscar_timeline(conn: Conn, dias: int, limite: int = 100) -> list[ItemTimeline]:
-    """União de norma/noticia/dou_materia publicados nos últimos `dias`
-    dias, mais recente primeiro. `noticia` já cobre tanto notícia quanto
-    consulta pública (categoria), então o `tipo` no resultado vem da coluna,
-    não de qual tabela originou a linha."""
+async def buscar_timeline(
+    conn: Conn,
+    data_inicio: date,
+    data_fim: date,
+    limite: int = 100,
+    q: str | None = None,
+) -> list[ItemTimeline]:
+    """União de norma/noticia/dou_materia publicados entre `data_inicio` e
+    `data_fim` (inclusive, por dia de calendário), mais recente primeiro.
+    `noticia` já cobre tanto notícia quanto consulta pública (categoria),
+    então o `tipo` no resultado vem da coluna, não de qual tabela originou
+    a linha.
+
+    `q`, quando presente, filtra por substring case-insensitive — pro caso
+    de uso principal (usuário digita "243" e quer ver RDC 243, IN 243 etc.)
+    o texto buscado inclui `tipo_ato`+`numero`+`ano` (é assim que o título
+    de uma norma é montado) mais a ementa; pra notícia, título+resumo; pra
+    matéria do DOU, só o título."""
     linhas = await conn.fetch(
         """
         (
@@ -37,7 +50,12 @@ async def buscar_timeline(conn: Conn, dias: int, limite: int = 100) -> list[Item
                    url_origem as url,
                    status_vigencia
             from norma
-            where data_publicacao >= now() - make_interval(days => $1)
+            where data_publicacao::date >= $1 and data_publicacao::date <= $2
+              and (
+                  $3::text is null
+                  or (tipo_ato || ' ' || numero || '/' || ano || ' ' || coalesce(ementa, ''))
+                     ilike '%' || $3 || '%'
+              )
         )
         union all
         (
@@ -47,7 +65,11 @@ async def buscar_timeline(conn: Conn, dias: int, limite: int = 100) -> list[Item
                    url,
                    null as status_vigencia
             from noticia
-            where data_publicacao >= now() - make_interval(days => $1)
+            where data_publicacao::date >= $1 and data_publicacao::date <= $2
+              and (
+                  $3::text is null
+                  or (titulo || ' ' || coalesce(resumo, '')) ilike '%' || $3 || '%'
+              )
         )
         union all
         (
@@ -57,12 +79,15 @@ async def buscar_timeline(conn: Conn, dias: int, limite: int = 100) -> list[Item
                    url,
                    null as status_vigencia
             from dou_materia
-            where edicao >= (now() - make_interval(days => $1))::date
+            where edicao >= $1 and edicao <= $2
+              and ($3::text is null or titulo ilike '%' || $3 || '%')
         )
         order by data desc
-        limit $2
+        limit $4
         """,
-        dias,
+        data_inicio,
+        data_fim,
+        q,
         limite,
     )
     return [

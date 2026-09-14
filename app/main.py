@@ -8,7 +8,7 @@ de cada um.
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, field_validator
@@ -79,17 +79,47 @@ class ItemTimelineResponse(BaseModel):
     status_vigencia: str | None
 
 
+DATA_MINIMA_TIMELINE = date(1900, 1, 1)
+
+
 @app.get("/timeline")
-async def timeline(dias: int = 30, limite: int = 100) -> list[ItemTimelineResponse]:
+async def timeline(
+    dias: int = 30,
+    limite: int = 100,
+    q: str | None = None,
+    data_inicio: date | None = None,
+    data_fim: date | None = None,
+) -> list[ItemTimelineResponse]:
     """Linha do tempo unificada: normas publicadas, notícias, consultas
-    públicas e matérias do DOU nos últimos `dias` dias (seção 9)."""
+    públicas e matérias do DOU (seção 9).
+
+    Duas formas de escolher o período, seção 9 + pedido do usuário de poder
+    "selecionar por data que eu quiser": `dias` (janela relativa a hoje,
+    comportamento original) OU `data_inicio`/`data_fim` explícitos — se
+    qualquer um dos dois for passado, `dias` é ignorado e o lado que faltar
+    vira aberto (início bem antigo / fim hoje). `q` filtra por
+    substring case-insensitive contra o título (número/tipo do ato pra
+    norma, ex.: "243" acha RDC 243, IN 243 etc. — ver `buscar_timeline`).
+    """
     if dias <= 0 or dias > 3650:
         raise HTTPException(status_code=422, detail="dias deve estar entre 1 e 3650")
     if limite <= 0 or limite > 500:
         raise HTTPException(status_code=422, detail="limite deve estar entre 1 e 500")
+    hoje = date.today()
+    if data_inicio is not None or data_fim is not None:
+        inicio = data_inicio or DATA_MINIMA_TIMELINE
+        fim = data_fim or hoje
+    else:
+        inicio = hoje - timedelta(days=dias)
+        fim = hoje
+    if inicio > fim:
+        raise HTTPException(status_code=422, detail="data_inicio não pode ser depois de data_fim")
+    termo = q.strip() if q and q.strip() else None
     pool = await get_pool()
     async with pool.acquire() as conn:
-        itens = await buscar_timeline(conn, dias=dias, limite=limite)
+        itens = await buscar_timeline(
+            conn, data_inicio=inicio, data_fim=fim, limite=limite, q=termo
+        )
     return [ItemTimelineResponse(**vars(i)) for i in itens]
 
 
