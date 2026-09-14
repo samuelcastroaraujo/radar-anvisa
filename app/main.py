@@ -41,7 +41,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await close_pool()
 
 
-app = FastAPI(title="RADAR ANVISA", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="RADAR ANVISA", version="0.1.1", lifespan=lifespan)
 
 
 @app.get("/health")
