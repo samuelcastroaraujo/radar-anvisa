@@ -118,6 +118,76 @@ export async function buscarConsultasPublicas(
   );
 }
 
+export interface ProdutoAlimento {
+  numero_processo: string;
+  numero_registro_ou_notificacao: string;
+  descricao: string;
+  situacao_registro: string | null;
+  tipo_regularizacao: string | null;
+  situacao_processo: string | null;
+  detentor_cnpj: string | null;
+  detentor_razao_social: string | null;
+  categorias: string[];
+  marcas: string[];
+  data_regularizacao: string | null;
+  data_atualizacao: string | null;
+  mes_ano_vencimento: string | null;
+  url_origem: string;
+}
+
+export interface BuscaProdutosAlimentos {
+  itens: ProdutoAlimento[];
+  pagina: number;
+  tamanho_pagina: number;
+}
+
+export interface FiltroProdutosAlimentos {
+  nomeProduto?: string;
+  marca?: string;
+  detentorRegistro?: string;
+  numeroProcesso?: string;
+  numeroRegistroNotificacao?: string;
+  pagina?: number;
+  tamanhoPagina?: number;
+}
+
+/**
+ * Consulta ao vivo (`GET /produtos/alimentos` no backend, que por sua vez
+ * consulta a API real da ANVISA na hora — nada disso é indexado no banco,
+ * ver `app/ingest/consultas_alimentos.py`). Sem `total`/`totalPages`
+ * de propósito: a API da ANVISA devolve esses campos como função só do
+ * `count` pedido, não do resultado real da busca (achado documentado em
+ * `research/FONTES.md`, Addendum pós-M7) — por isso a paginação aqui é só
+ * "próxima/anterior", nunca "página X de Y".
+ */
+export async function buscarProdutosAlimentos(
+  filtro: FiltroProdutosAlimentos,
+): Promise<BuscaProdutosAlimentos> {
+  const {
+    nomeProduto,
+    marca,
+    detentorRegistro,
+    numeroProcesso,
+    numeroRegistroNotificacao,
+    pagina = 1,
+    tamanhoPagina = 10,
+  } = filtro;
+  const params = new URLSearchParams({
+    pagina: String(pagina),
+    tamanho_pagina: String(tamanhoPagina),
+  });
+  if (nomeProduto) params.set("nome_produto", nomeProduto);
+  if (marca) params.set("marca", marca);
+  if (detentorRegistro) params.set("detentor_registro", detentorRegistro);
+  if (numeroProcesso) params.set("numero_processo", numeroProcesso);
+  if (numeroRegistroNotificacao) {
+    params.set("numero_registro_notificacao", numeroRegistroNotificacao);
+  }
+  return apiFetch<BuscaProdutosAlimentos>(`/produtos/alimentos?${params.toString()}`, {
+    cache: "no-store",
+  });
+}
+
 export interface StatusFonte {
   fonte: string;
   status: string | null;

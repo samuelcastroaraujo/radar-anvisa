@@ -9,6 +9,7 @@ const LINKS = [
   { href: "/", label: "Chat" },
   { href: "/timeline", label: "Linha do tempo" },
   { href: "/consultas-publicas", label: "Consultas públicas" },
+  { href: "/produtos", label: "Registros de produtos" },
 ];
 
 export function Nav() {
