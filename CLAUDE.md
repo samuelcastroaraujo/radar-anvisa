@@ -17,7 +17,10 @@ externas (endpoints reais testados, encoding, estruturas de dados).
 - Banco: Supabase (Postgres) com `pgvector` + `pg_trgm`.
 - Embeddings: OpenAI `text-embedding-3-large` (dim 3072).
 - LLM: Claude Sonnet via SDK `anthropic`.
-- Scraping: `httpx` + `selectolax`; `pymupdf` para PDF.
+- Scraping: `httpx` + `selectolax`; `pymupdf` para PDF. Exceção pontual:
+  `curl_cffi` só em `app/ingest/consultas_alimentos.py` (Cloudflare Bot
+  Management bloqueia o fingerprint de TLS do `httpx` nesse domínio
+  específico — ver seção "Consulta de registro de produtos" abaixo).
 - Scheduler: APScheduler (job diário 06:00 BRT, a partir do M5).
 - Frontend: Next.js + TypeScript + Tailwind + shadcn/ui (a partir do M6).
 - Deploy: backend no Railway, frontend na Vercel.
@@ -821,6 +824,78 @@ específica, não bloqueia o restante da correção. `scripts/
 corrigir_revoga_parcial_ponto.py` é idempotente e seguro de rodar de novo
 a qualquer momento pra tentar essas 4 (ou pegar normas novas que caiam no
 mesmo padrão).
+
+### Consulta de registro de produtos de alimentos/suplementos (pós-M7, a pedido do usuário)
+
+Pedido: pesquisar pelo RADAR ANVISA o registro/notificação de um suplemento
+alimentar, como em `https://consultas.anvisa.gov.br/#/alimentos/`.
+
+- **Endpoint real achado lendo o JS-fonte do Angular** (mesma plataforma
+  `consultas.anvisa.gov.br` já sinalizada como SPA não mapeada no M0, só
+  que o módulo "alimentos", não "alertas de segurança"): `GET /api/
+  consulta/alimento/produtos/?filter[nomeProduto]=...&filter[marca]=...
+  &page=N&count=N` (busca) e `GET /api/consulta/alimento/produtos/
+  {numeroProcesso}` (detalhe). Pelo menos um filtro é obrigatório — a
+  própria API rejeita busca vazia (`HTTP 500`, `MSG-004`). Ver Addendum
+  pós-M7 em `research/FONTES.md` para o reconhecimento completo.
+- **Achado real, não suposto**: processo inexistente devolve **HTTP 500**
+  (não 404), com `error: "Nenhuma apresentação encontrada"`.
+  `detalhe_produto` (`app/ingest/consultas_alimentos.py`) distingue esse
+  500 específico (vira `None`) de um 500 de verdade (propaga/retry) pelo
+  corpo da resposta, não só pelo status code.
+- **Achado que mudou a implementação**: o domínio está atrás de Cloudflare
+  Bot Management, que bloqueia (403) toda requisição feita com `httpx`
+  (a lib HTTP do resto do projeto) mesmo com headers idênticos aos de uma
+  requisição que passa via `curl` — confirmado isolando variável por
+  variável (não é User-Agent, não é HTTP/2; é o fingerprint de TLS/JA3 do
+  `httpcore`/`ssl` do Python, diferente do `curl`). Testado repetidas
+  vezes contra a API real: `httpx` deu 403 em 4/4 tentativas (mesmo com o
+  retry/backoff padrão do projeto já ativo), `curl` passou 2/2. Resolvido
+  trocando a dependência de rede **só deste módulo** para `curl_cffi`
+  (bindings pra libcurl com impersonation de TLS de navegador de verdade,
+  `impersonate="chrome"`) — confirmado 3/3 contra a API real antes de
+  virar dependência (`uv add curl_cffi`), com decisão do usuário de não
+  mexer no resto do projeto (nenhum outro domínio crawleado até hoje
+  precisou disso).
+- **Implementado como consulta ao vivo, não ingestão/RAG**: diferente dos
+  outros módulos em `app/ingest/`, não existe "carregar tudo" — é lookup
+  pontual sob demanda, mesmo raciocínio do roteamento `norma_especifica`
+  no `/chat` (M4): não faz sentido indexar o catálogo inteiro de produtos
+  regularizados pra embeddings. Dois endpoints novos em `app/main.py`,
+  sem tocar o banco: `GET /produtos/alimentos` (busca, com paginação) e
+  `GET /produtos/alimentos/{numero_processo}` (detalhe, 404 se não achar
+  — a tradução do 500 "processo não encontrado" da ANVISA pra um 404
+  decente na nossa própria API).
+- Testes (`tests/test_consultas_alimentos.py`) usam amostras reais salvas
+  em `research/samples/` (busca, detalhe, processo inexistente) com um
+  `FakeSession` injetado no lugar do `curl_cffi.AsyncSession` — não existe
+  um `MockTransport` equivalente ao do `httpx` pra essa lib, então o
+  cliente expõe um `Protocol` mínimo (`get`/`close`) só pra permitir essa
+  injeção nos testes.
+- Validado de ponta a ponta contra a API real (não só teste mockado, via
+  `TestClient` + rede de verdade): busca por "creatina" e "whey" retornou
+  produtos reais (CNPJ do detentor, situação Ativo/Inativo, tipo Notificado/
+  Registrado, categorias, marcas), detalhe de um processo específico trouxe
+  a lista completa de marcas associadas, e processo inexistente devolveu
+  404 limpo pela nossa API.
+- **2º achado real, só apareceu testando paginação de verdade (página 2
+  depois da 1ª, não numa chamada isolada)**: `totalElements`/
+  `numberOfElements` da API da ANVISA não refletem o resultado real da
+  busca — são função só do `count` pedido (`totalElements = count+2`,
+  `numberOfElements = count+1`, **sempre**, confirmado com "whey",
+  "creatina" e "vitamina c" dando exatamente os mesmos números pro mesmo
+  `count`). Consequência: `content` sempre vem com 1 item a mais do que
+  o pedido, com o último item de uma página igual ao primeiro da
+  seguinte. Não é efeito de como chamamos a API: o controller Angular da
+  própria página oficial (`alimentos.result`) usa esse mesmo
+  `totalElements` pra alimentar sua tabela — o bug também aparece pro
+  usuário final no site de verdade. Decisão do usuário: não expor
+  `total_elementos`/`total_paginas` no `/produtos/alimentos` (seria um
+  número fabricado). `_parse_resultado` corta `content` pro tamanho
+  pedido — verificado ao vivo (1 item por página, páginas 1/2/3,
+  comparado com uma busca de referência `count=20`) que isso dá uma
+  sequência sem lacuna nem duplicata. Ver Addendum pós-M7 em
+  `research/FONTES.md` para os números completos do isolamento.
 
 ## Milestones (status)
 

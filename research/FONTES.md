@@ -589,6 +589,112 @@ job de verdade contra 11/09/2026: 18 matérias da ANVISA encontradas (DO1:
 cobrir essa série (não coberto até o M5); documentado aqui para não
 confundir "0 vínculos" com um linker quebrado.
 
+## Addendum pós-M7 — consultas.anvisa.gov.br/#/alimentos (registro de produtos, inclui suplementos)
+
+Pedido do usuário: pesquisar registro/notificação de suplemento alimentar
+via `https://consultas.anvisa.gov.br/#/alimentos/`. É a mesma plataforma
+(AngularJS 1.x + Restangular) já sinalizada como não mapeada na seção 2
+(`informes-de-seguranca`), só que o módulo "alimentos" — investigado e
+resolvido nesta sessão.
+
+**Endpoint real** (achado lendo o JS-fonte do Angular, não documentação
+nenhuma — `scripts/services/alimento.service.js`, `RestangularProvider.
+setBaseUrl('api')` em `scripts/app/app.js`):
+
+- Busca: `GET /api/consulta/alimento/produtos/?filter[nomeProduto]=...
+  &filter[marca]=...&filter[detentorRegistro]=...&filter[numeroProcesso]=...
+  &filter[numeroRegistroNotificacao]=...&page=N&count=N` — pelo menos um
+  filtro é obrigatório (sem nenhum, `HTTP 500` com `error: mensagens.
+  MSG-004`, confirmado ao vivo — o formulário da própria página valida a
+  mesma regra no cliente). Existem bem mais filtros de "busca avançada" no
+  controller (`categorias`, datas, alérgenos etc.) não exercitados aqui.
+- Detalhe: `GET /api/consulta/alimento/produtos/{numeroProcesso}`.
+- Header `Authorization: Guest` — o token anônimo que o próprio app manda
+  por padrão (`localStorage.Authorization`, ver `scripts/app/app.js`); sem
+  ele a API responde erro de negócio. **Não exige captcha** pra esta
+  consulta (hCaptcha existe no portal, mas pra outras telas).
+- **Achado real, não suposto**: número de processo inexistente devolve
+  **HTTP 500** (não 404!), com `error: "Nenhuma apresentação encontrada"`
+  — amostra em `samples/consultas_alimentos_processo_inexistente.json`.
+  `detalhe_produto` (`app/ingest/consultas_alimentos.py`) distingue esse
+  500 específico de um 500 de verdade pelo corpo da resposta.
+- Amostras reais salvas: `samples/consultas_alimentos_busca_whey.json`,
+  `samples/consultas_alimentos_detalhe.json`,
+  `samples/consultas_alimentos_processo_inexistente.json`.
+
+### Cloudflare bloqueia `httpx`, não `curl` — achado só testando de ponta a ponta
+
+O domínio está atrás de Cloudflare. Testado isoladamente, requisição por
+requisição: com **headers idênticos**, `curl` passa (200) e o `httpx`
+(biblioteca HTTP usada em todo o resto do projeto) toma **403 consistente,
+4 tentativas seguidas, mesmo com retry/backoff** — não é intermitência,
+é bloqueio confiável do fingerprint de TLS (JA3/JA4) que o `httpcore`/`ssl`
+do Python produz, distinto do fingerprint do `curl`. Confirmado que não é
+User-Agent (bot UA + headers de navegador bloqueia igual; UA do projeto +
+`Referer` da própria SPA passa no `curl`) nem HTTP/2 (`curl` negociou
+HTTP/1.1 nos testes). `Referer: https://consultas.anvisa.gov.br/` sozinho
+é o que decide entre 403 e 200 no `curl` — mas isso não salva o `httpx`.
+
+**Resolvido com `curl_cffi`** (bindings pra libcurl com impersonation de
+TLS de navegador de verdade, `impersonate="chrome"`) — testado ao vivo,
+repetidas vezes (`AsyncSession`, 3/3 sucessos onde `httpx` deu 4/4 403),
+antes de virar dependência real do projeto (`uv add curl_cffi`). Decisão
+do usuário: usar só neste módulo (`app/ingest/consultas_alimentos.py`); o
+resto do projeto continua em `httpx` normalmente — nenhum outro domínio
+crawleado até agora exigiu isso.
+
+**Implementado como consulta ao vivo, não ingestão**: diferente dos outros
+módulos, não existe "carregar tudo" — é lookup pontual sob demanda
+(`GET /produtos/alimentos` e `GET /produtos/alimentos/{numero_processo}`
+em `app/main.py`), sem gravar nada no banco. O catálogo de produtos
+regularizados não faz sentido indexar pra RAG (mesmo raciocínio de
+`norma_especifica` no roteamento do `/chat`, M4).
+
+Nota de qualidade de dado (não é bug do parser): alguns nomes de marca
+vêm com entidade HTML literal não decodificada (ex.: `JOTA&apos;S
+SUPLEMENTOS`) — é assim que a própria API da ANVISA devolve o campo, não
+um efeito de decodificação nossa.
+
+### `totalElements`/`totalPages` da API são um número fantasma — achado validando de ponta a ponta
+
+Só apareceu testando paginação de verdade (página 2 depois da página 1),
+não numa chamada isolada — por isso passou batido na primeira rodada de
+validação. Isolado variável por variável, direto contra a API real:
+
+```
+count=1  -> totalElements=3   numberOfElements=2
+count=3  -> totalElements=5   numberOfElements=4
+count=5  -> totalElements=7   numberOfElements=6
+count=10 -> totalElements=12  numberOfElements=11
+count=20 -> totalElements=22  numberOfElements=21
+```
+
+Testado com `"whey"`, `"creatina"` e `"vitamina c"` — três termos
+completamente diferentes deram **exatamente os mesmos números** pro
+mesmo `count`. Ou seja: `totalElements = count+2` e `numberOfElements =
+count+1`, sempre — não refletem o resultado real da busca, só o `count`
+pedido. Consequência prática: `content` sempre vem com 1 item a mais do
+que o `count` pedido, e o **último item de uma página é igual ao
+primeiro item da página seguinte** (bug de "peek" na paginação do
+backend deles: tudo indica que eles buscam `count+1` registros pra saber
+se há próxima página, mas não descartam esse registro extra nem avançam
+o offset pra compensar).
+
+**Não é um efeito colateral de como estamos chamando a API**: o próprio
+controller Angular (`scripts/app/alimentos/alimentos.controller.js`,
+estado `alimentos.result`) faz `params.total(alimento.totalElements)`
+pra alimentar a paginação da tabela na página oficial — ou seja, esse
+mesmo número fantasma também aparece pro usuário final no site de
+verdade, não é algo que só afeta uso programático.
+
+**Decisão do usuário**: não expor `total_elementos`/`total_paginas` no
+nosso `/produtos/alimentos` (seriam um número fabricado, pior que não
+ter o campo numa ferramenta de compliance). `_parse_resultado`
+(`app/ingest/consultas_alimentos.py`) corta `content` pro tamanho
+pedido antes de devolver — testado ao vivo pedindo 1 item por vez nas
+páginas 1, 2 e 3 e comparando com uma busca de referência trazendo tudo
+de uma vez (`count=20`): bate exatamente, sem lacuna nem duplicata.
+
 ## Resumo do que ficou pendente (nada foi inventado além disto)
 
 1. **`informes-de-seguranca`**: mudou para SPA em `consultas.anvisa.gov.br`;
@@ -609,6 +715,12 @@ ver Addendum M2 abaixo e o resultado final em `CLAUDE.md`.
 morto → API REST `++api++` do Plone) e INLABS (login/download já validados
 no M0; parser trocado de HTML5 para XML de verdade) — ver os três
 Addendums M5 acima.
+
+**Resolvido pós-M7:** módulo "alimentos" de `consultas.anvisa.gov.br`
+(registro/notificação de produtos, inclui suplementos) — API real mapeada,
+bloqueio de Cloudflare contra `httpx` identificado e contornado com
+`curl_cffi`, endpoint `/produtos/alimentos` no ar. `informes-de-seguranca`
+(item 1 acima), na mesma plataforma, continua não mapeado.
 
 Nenhum endpoint usado no código (a partir do M1) deve ir além do que está
 documentado e testado aqui. Qualquer ação nova (`acao=...`) encontrada durante

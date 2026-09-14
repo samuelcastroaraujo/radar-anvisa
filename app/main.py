@@ -23,6 +23,12 @@ from app.alertas import (
 from app.chat import responder
 from app.config import get_settings
 from app.db import close_pool, get_pool
+from app.ingest.consultas_alimentos import (
+    ConsultasAnvisaClient,
+    ProdutoAlimento,
+    buscar_produtos,
+    detalhe_produto,
+)
 from app.scheduler import iniciar_scheduler
 from app.timeline import buscar_consultas_publicas, buscar_status_fontes, buscar_timeline
 
@@ -141,6 +147,97 @@ async def consultas_publicas(apenas_abertas: bool = True) -> list[ConsultaPublic
     async with pool.acquire() as conn:
         cps = await buscar_consultas_publicas(conn, apenas_abertas=apenas_abertas)
     return [ConsultaPublicaResponse(**vars(cp)) for cp in cps]
+
+
+class ProdutoAlimentoResponse(BaseModel):
+    numero_processo: str
+    numero_registro_ou_notificacao: str
+    descricao: str
+    situacao_registro: str | None
+    tipo_regularizacao: str | None
+    situacao_processo: str | None
+    detentor_cnpj: str | None
+    detentor_razao_social: str | None
+    categorias: list[str]
+    marcas: list[str]
+    data_regularizacao: datetime | None
+    data_atualizacao: datetime | None
+    mes_ano_vencimento: str | None
+    url_origem: str
+
+
+def _produto_response(p: ProdutoAlimento) -> ProdutoAlimentoResponse:
+    return ProdutoAlimentoResponse(**vars(p))
+
+
+class BuscaProdutosAlimentosResponse(BaseModel):
+    itens: list[ProdutoAlimentoResponse]
+    pagina: int
+    tamanho_pagina: int
+
+
+@app.get("/produtos/alimentos")
+async def produtos_alimentos(
+    nome_produto: str | None = None,
+    marca: str | None = None,
+    detentor_registro: str | None = None,
+    numero_processo: str | None = None,
+    numero_registro_notificacao: str | None = None,
+    pagina: int = 1,
+    tamanho_pagina: int = 10,
+) -> BuscaProdutosAlimentosResponse:
+    """Consulta ao vivo o registro/notificação de produtos de alimentos
+    (inclui suplementos alimentares) direto na API por trás de
+    https://consultas.anvisa.gov.br/#/alimentos/ — não passa pelo banco:
+    é lookup pontual, não faz sentido indexar esse catálogo inteiro pra RAG
+    (mesmo raciocínio de `norma_especifica` no `/chat`, seção 7). Ver
+    `research/FONTES.md`, Addendum pós-M7, para como o endpoint foi achado.
+
+    Sem `total_elementos`/`total_paginas` de propósito: a API da ANVISA
+    devolve esses dois campos como função só do `count` pedido, não do
+    resultado real da busca (achado real, confirmado com múltiplos termos
+    — ver Addendum pós-M7) — expor um "total de resultados" fabricado
+    numa ferramenta de compliance seria pior que não ter o campo. Pra
+    saber se há mais itens, pedir a página seguinte."""
+    if tamanho_pagina <= 0 or tamanho_pagina > 50:
+        raise HTTPException(status_code=422, detail="tamanho_pagina deve estar entre 1 e 50")
+    if pagina <= 0:
+        raise HTTPException(status_code=422, detail="pagina deve ser maior ou igual a 1")
+    cliente = ConsultasAnvisaClient()
+    try:
+        resultado = await buscar_produtos(
+            cliente,
+            nome_produto=nome_produto,
+            marca=marca,
+            detentor_registro=detentor_registro,
+            numero_processo=numero_processo,
+            numero_registro_notificacao=numero_registro_notificacao,
+            pagina=pagina,
+            tamanho_pagina=tamanho_pagina,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    finally:
+        await cliente.aclose()
+    return BuscaProdutosAlimentosResponse(
+        itens=[_produto_response(p) for p in resultado.itens],
+        pagina=resultado.pagina,
+        tamanho_pagina=resultado.tamanho_pagina,
+    )
+
+
+@app.get("/produtos/alimentos/{numero_processo}")
+async def produto_alimento_detalhe(numero_processo: str) -> ProdutoAlimentoResponse:
+    """Detalhe de um produto pelo número de processo (o mesmo `numero` que
+    aparece em cada item de `/produtos/alimentos`)."""
+    cliente = ConsultasAnvisaClient()
+    try:
+        produto = await detalhe_produto(cliente, numero_processo)
+    finally:
+        await cliente.aclose()
+    if produto is None:
+        raise HTTPException(status_code=404, detail="produto não encontrado")
+    return _produto_response(produto)
 
 
 class PerguntaChat(BaseModel):
