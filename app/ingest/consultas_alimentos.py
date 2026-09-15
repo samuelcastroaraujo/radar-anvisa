@@ -338,6 +338,26 @@ async def buscar_produtos(
         raise ValueError(
             f"situacao_registro inválido: {situacao_registro!r} (esperado 'Ativo' ou 'Inativo')"
         )
+    # Validado com os argumentos ORIGINAIS, antes da resolução de empresa —
+    # achado real (só apareceu via chat, não em teste unitário): se isso
+    # checasse `params` já resolvido dentro do loop abaixo, uma
+    # `detentor_registro` que é o único filtro e não resolve pra nenhum
+    # CNPJ virava, por engano, "nenhum filtro foi informado" (erro) em vez
+    # de "esse filtro não achou nada" (resultado vazio).
+    if not any(
+        [
+            nome_produto,
+            marca,
+            detentor_registro,
+            numero_processo,
+            numero_registro_notificacao,
+            situacao_registro,
+        ]
+    ):
+        raise ValueError(
+            "informe ao menos um filtro (nome_produto, marca, detentor_registro, "
+            "numero_processo, numero_registro_notificacao ou situacao_registro)"
+        )
 
     candidatos_cnpj: list[str | None]
     if detentor_registro and not _eh_cnpj(detentor_registro):
@@ -361,10 +381,15 @@ async def buscar_produtos(
         if situacao_registro:
             params["filter[situacaoProduto]"] = _SITUACAO_PRODUTO_MAP[situacao_registro]
         if not params:
-            raise ValueError(
-                "informe ao menos um filtro (nome_produto, marca, detentor_registro, "
-                "numero_processo, numero_registro_notificacao ou situacao_registro)"
+            # só chega aqui quando `detentor_registro` era o ÚNICO filtro
+            # original e não resolveu pra nenhum CNPJ (já validamos acima
+            # que pelo menos um filtro foi dado) — é "esse filtro não
+            # achou nada", não "nenhum filtro foi informado". Não bate na
+            # API (ela rejeitaria do mesmo jeito, com MSG-004).
+            resultado = ResultadoBuscaProdutos(
+                itens=[], pagina=pagina, tamanho_pagina=tamanho_pagina
             )
+            continue
         params["page"] = str(pagina)
         params["count"] = str(tamanho_pagina)
         resp = await cliente._get("/api/consulta/alimento/produtos/", params=params)

@@ -76,7 +76,12 @@ _RE_DIAS = re.compile(r"(\d+)\s+dias", re.IGNORECASE)
 # indo pra busca temática/RAG).
 _RE_PRODUTO_ALIMENTO = re.compile(
     r"\b(est\w*|s[aã]o|[eé]|foi|foram|ficou|ficaram|continua\w*)\s+\w*\s*"
-    r"(regulariz\w*|registrad[oa]s?|notificad[oa]s?|anu[ií]d[oa]s?)\b"
+    # "ativo(s)"/"inativo(s)" de propósito — achado real testando de ponta
+    # a ponta: "quais produtos da X estão ativos?" é uma frase natural
+    # (o próprio filtro `situacao_registro` do sistema chama isso de
+    # "Ativo"/"Inativo"), e sem esses dois o regex deixava passar pra
+    # busca temática por engano.
+    r"(regulariz\w*|registrad[oa]s?|notificad[oa]s?|anu[ií]d[oa]s?|ativ[oa]s?|inativ[oa]s?)\b"
     r"|\b(tem|t[eê]m|possui\w*)\s+(registro|notifica[cç][aã]o)\b",
     re.IGNORECASE,
 )

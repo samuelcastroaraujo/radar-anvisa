@@ -18,10 +18,18 @@ CASOS_PRODUTO_ALIMENTO = [
     "esse whey protein tem registro na anvisa?",
     "as vitaminas da marca X têm notificação válida?",
     "a proteína X foi regularizada em 2023?",
+    # achado real testando de ponta a ponta (não em teste unitário) —
+    # "ativo"/"inativo" faltava na lista de particípios, mesmo sendo
+    # literalmente os valores do filtro `situacao_registro` do sistema.
+    "quais produtos da absolut nutrition estão ativos?",
+    "esse produto está ativo na anvisa?",
+    "essa notificação está inativa?",
 ]
 
 CASOS_NAO_PRODUTO_ALIMENTO = [
     ("a RDC 243/2018 ainda está vigente?", "norma_especifica"),
+    # "em vigor" não deve colidir com o gatilho novo de "ativo/inativo".
+    ("quais normas estão em vigor essa semana?", "temporal"),
     # achado escrevendo este teste: "notificação" sozinho (sem "tem"/"têm"/
     # "possui" logo antes) não deve virar produto_alimento — é uma pergunta
     # sobre o PROCESSO em geral, não sobre um produto específico.
