@@ -505,3 +505,38 @@ async def test_buscar_produtos_enriquecimento_item_com_falha_nao_derruba_lista()
     por_processo = {item.numero_processo: item for item in resultado.itens}
     assert por_processo["PROC1"].marcas == ["MARCA UM"]
     assert por_processo["PROC2"].marcas == []
+
+
+async def test_buscar_produtos_enriquecimento_nao_passa_pelo_rate_limiter_serial() -> None:
+    """Regressão de um bug real, achado revisando lentidão pós-deploy: a
+    primeira versão do enriquecimento já tinha um semáforo de
+    concorrência, mas cada chamada de detalhe ainda esperava na fila de
+    1 req/s do `RateLimiter` do cliente (compartilhado por toda chamada
+    feita com ele) — na prática zero concorrência, só 1 req/s serial de
+    qualquer jeito. `detalhe_produto(..., respeitar_limite=False)`
+    corrige isso; este teste trava se alguém remover o `respeitar_limite`
+    e reintroduzir o bug."""
+
+    def handler(url: str, params: dict[str, str] | None) -> FakeResponse:
+        if url == f"{BASE_URL}/api/consulta/alimento/produtos/":
+            return FakeResponse(200, _LISTAGEM_DOIS_ITENS)
+        numero = url.rsplit("/", 1)[-1]
+        return FakeResponse(200, _detalhe_com_marcas(numero, [f"MARCA {numero}"]))
+
+    cliente = ConsultasAnvisaClient(sessao=FakeSession(handler))
+    chamadas_limiter = 0
+    aguardar_original = cliente._limiter.aguardar
+
+    async def aguardar_contado() -> None:
+        nonlocal chamadas_limiter
+        chamadas_limiter += 1
+        await aguardar_original()
+
+    cliente._limiter.aguardar = aguardar_contado  # type: ignore[method-assign]
+
+    await buscar_produtos(cliente, nome_produto="x", tamanho_pagina=2, enriquecer_marcas=True)
+    await cliente.aclose()
+
+    # só a busca em lista passa pelo limiter — as 2 chamadas de detalhe do
+    # enriquecimento (PROC1/PROC2) não devem (respeitar_limite=False).
+    assert chamadas_limiter == 1

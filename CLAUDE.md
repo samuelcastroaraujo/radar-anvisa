@@ -1023,6 +1023,60 @@ produto, não só ter a aba separada.
   alucinar. `teve_citacao` também passou a considerar produtos citados,
   não só normas.
 
+### Marca do produto nos cards de `/produtos` + correção de lentidão (pós-M7, a pedido do usuário)
+
+Pedido: mostrar "Marca do Produto" em cada card da listagem (ex.:
+`JUST WHEY PROTEIN ISOLADO` pro processo `25351585937202398`), sem
+prejudicar a velocidade de resposta.
+
+- **Achado real**: a busca em lista da ANVISA nunca traz `marcas` (campo
+  sempre `null` na resposta de busca, confirmado em todos os itens da
+  amostra real) — só o endpoint de detalhe tem, e não existe endpoint em
+  lote. `buscar_produtos` ganhou `enriquecer_marcas=True` (opt-in): busca
+  o detalhe de cada item da página pra preencher `marcas`.
+- **Bug real, achado revisando "está devagar" depois do primeiro
+  deploy**: a primeira versão já tinha um semáforo de concorrência, mas
+  cada chamada de detalhe ainda passava pelo `RateLimiter` de 1 req/s
+  compartilhado por todo o cliente — o semáforo limitava quantas tarefas
+  ficavam *em voo*, mas todas esperavam a mesma fila de 1s antes de
+  disparar. Na prática, zero concorrência de verdade, ~N segundos pra N
+  itens (pior que parecia ao ler o código).
+- **2º achado, testando o fix do 1º ao vivo contra a API real**: tirar o
+  limite por completo (só o semáforo, sem nenhum limiter) faz uma busca
+  ampla (~50 itens, ex. `nome_produto=whey`) tomar **HTTP 429** da
+  própria ANVISA numa fração real dos itens — o 1 req/s do resto do
+  projeto (seção 0 de `research/FONTES.md`) não é só cortesia arbitrária,
+  esse domínio rate-limita de verdade sob rajada. Corrigido com um
+  `RateLimiter` **dedicado e mais rápido** só pro enriquecimento
+  (`ConsultasAnvisaClient._limiter_enriquecimento`, ~4 req/s) por cima de
+  um teto de concorrência (6) — mais rápido que 1 req/s, mas ainda um
+  limite de verdade, não um bypass total. Cache em memória com TTL de 1h
+  (`_cache_marcas`) evita repetir a mesma chamada de detalhe entre buscas
+  populares ("whey", "creatina"). Teto de 15s pro enriquecimento inteiro;
+  item que não termina a tempo só fica sem marca, não derruba a listagem.
+- **3º achado, efeito colateral de testar o 2º ao vivo repetidas vezes
+  contra a API real pra calibrar**: a própria bateria de testes deixou o
+  IP temporariamente rate-limitado pela ANVISA (até a busca em lista
+  simples, sempre em 1 req/s, chegou a tomar 429) — não é um bug da
+  aplicação, é efeito de martelar a API de verdade várias vezes seguidas
+  em poucos minutos só pra encontrar o teto seguro; a decisão foi parar
+  de testar ao vivo (não faz sentido continuar pressionando a API de
+  produção só pra calibrar um número) e escolher parâmetros com margem
+  de segurança em vez do teto exato. Revelou uma lacuna real, essa sim
+  corrigida: `HTTPError`/`RequestException` não tratados em
+  `/produtos/alimentos` e `/produtos/alimentos/{numero_processo}`
+  vazavam como 500 cru pro frontend depois que o `@retry` esgotava as 4
+  tentativas — agora viram 503 com mensagem honesta ("ANVISA está
+  limitando ou fora do ar agora"), já que a falha é da fonte externa, não
+  desta API. `tests/test_produtos_endpoint.py` cobre os dois endpoints
+  com um `HTTPError` simulado (não bate na rede).
+- Validado ao vivo (antes da calibração de concorrência degradar por
+  causa do próprio teste): busca real por `marca=just+whey&detentor_
+  registro=10769880000119` devolveu os 3 produtos reais com marca
+  correta (`JUST WHEY PROTEIN ISOLADO` no processo citado no pedido) em
+  0,75s — a mesma busca do exemplo do usuário, ponta a ponta (browser →
+  Vercel → Railway → ANVISA), sem tocar o banco.
+
 ## Milestones (status)
 
 - [x] M0 — Reconhecimento das fontes.

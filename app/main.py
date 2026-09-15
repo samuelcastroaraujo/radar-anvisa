@@ -10,6 +10,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta
 
+from curl_cffi.requests.exceptions import HTTPError, RequestException
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, field_validator
 
@@ -230,6 +231,16 @@ async def produtos_alimentos(
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except (HTTPError, RequestException) as exc:
+        # Achado real (não hipotético): a API da ANVISA rate-limita de
+        # verdade sob rajada (HTTP 429), e o `@retry` de
+        # `ConsultasAnvisaClient._get` já tenta de novo com backoff antes
+        # de desistir — sem este catch, um 429/5xx persistente vazava como
+        # 500 cru pro frontend. 503 é honesto: a falha é da fonte externa,
+        # não desta API.
+        raise HTTPException(
+            status_code=503, detail="ANVISA está limitando ou fora do ar agora — tente de novo"
+        ) from exc
     finally:
         await cliente.aclose()
     return BuscaProdutosAlimentosResponse(
@@ -246,6 +257,14 @@ async def produto_alimento_detalhe(numero_processo: str) -> ProdutoAlimentoRespo
     cliente = ConsultasAnvisaClient()
     try:
         produto = await detalhe_produto(cliente, numero_processo)
+    except (HTTPError, RequestException) as exc:
+        # Mesmo achado real do 429 documentado em `produtos_alimentos` —
+        # `detalhe_produto` já traduz "processo não encontrado" (HTTP 500
+        # específico) pra `None` antes disso, então qualquer HTTPError que
+        # chegue aqui é falha de verdade (429/5xx), não esse caso conhecido.
+        raise HTTPException(
+            status_code=503, detail="ANVISA está limitando ou fora do ar agora — tente de novo"
+        ) from exc
     finally:
         await cliente.aclose()
     if produto is None:

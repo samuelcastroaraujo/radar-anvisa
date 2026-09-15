@@ -211,6 +211,13 @@ class ConsultasAnvisaClient:
                 ),
             )
         self._limiter = RateLimiter()
+        # Limiter separado, mais rápido, só pro enriquecimento de marca da
+        # listagem (`detalhe_produto(..., respeitar_limite=False)`) — ver
+        # nota completa (achado real de HTTP 429 ao vivo) na seção de
+        # enriquecimento, perto de `_enriquecer_com_marcas`.
+        self._limiter_enriquecimento = RateLimiter(
+            intervalo_segundos=_INTERVALO_ENRIQUECIMENTO_SEGUNDOS
+        )
         self._owns_sessao = sessao is None
 
     async def aclose(self) -> None:
@@ -223,8 +230,18 @@ class ConsultasAnvisaClient:
         wait=wait_exponential_jitter(initial=1, max=20),
         reraise=True,
     )
-    async def _get(self, path: str, params: dict[str, str] | None = None) -> Response:
-        await self._limiter.aguardar()
+    async def _get(
+        self, path: str, params: dict[str, str] | None = None, *, respeitar_limite: bool = True
+    ) -> Response:
+        # `respeitar_limite=False` troca o 1 req/s padrão (política de
+        # crawling em lote, seção 0 de research/FONTES.md) pelo limiter
+        # mais rápido dedicado ao enriquecimento — NÃO remove o limite:
+        # achado real testando ao vivo, sem limiter nenhum (bypass total)
+        # um lote de ~50 chamadas concorrentes toma HTTP 429 da própria
+        # ANVISA em boa parte dos itens. Ver nota completa perto de
+        # `_enriquecer_com_marcas`.
+        limiter = self._limiter if respeitar_limite else self._limiter_enriquecimento
+        await limiter.aguardar()
         resp = await self._sessao.get(f"{BASE_URL}{path}", params=params)
         resp.raise_for_status()
         return resp
@@ -413,12 +430,21 @@ async def buscar_produtos(
 
 
 async def detalhe_produto(
-    cliente: ConsultasAnvisaClient, numero_processo: str
+    cliente: ConsultasAnvisaClient, numero_processo: str, *, respeitar_limite: bool = True
 ) -> ProdutoAlimento | None:
     """`None` se o número de processo não existir na base da ANVISA (ver
-    `_eh_processo_nao_encontrado` — a API usa HTTP 500 pra isso, não 404)."""
+    `_eh_processo_nao_encontrado` — a API usa HTTP 500 pra isso, não 404).
+
+    `respeitar_limite=False` pula o rate limit de 1 req/s do cliente —
+    usado só internamente por `_marcas_com_cache`, que já limita
+    concorrência via semáforo (ver `_enriquecer_com_marcas`); qualquer
+    chamador externo (inclusive `GET /produtos/alimentos/{numero_processo}`)
+    continua respeitando o limite por padrão."""
     try:
-        resp = await cliente._get(f"/api/consulta/alimento/produtos/{numero_processo}")
+        resp = await cliente._get(
+            f"/api/consulta/alimento/produtos/{numero_processo}",
+            respeitar_limite=respeitar_limite,
+        )
     except HTTPError as exc:
         if _eh_processo_nao_encontrado(exc):
             return None
@@ -438,12 +464,38 @@ async def detalhe_produto(
 # Pra não pagar N segundos (1 req/s é a política de crawling em lote do
 # projeto, seção 0 de research/FONTES.md) numa busca interativa de 1
 # usuário — volume já limitado por `tamanho_pagina` (máx. 50, validado em
-# app/main.py) — duas coisas escopadas só pra este enriquecimento, não pro
-# resto do módulo: concorrência limitada em vez de 1 req/s serial, e cache
-# em memória com TTL (marca de um produto já registrado muda raríssimo, e
-# buscas populares — "whey", "creatina" — se repetem entre usuários).
-_CONCORRENCIA_ENRIQUECIMENTO_MARCAS = 8
-_TIMEOUT_ENRIQUECIMENTO_MARCAS_SEGUNDOS = 12.0
+# app/main.py) — três coisas escopadas só pra este enriquecimento, não pro
+# resto do módulo: um limiter dedicado mais rápido (`_limiter_
+# enriquecimento`, ~1 req/(_INTERVALO_ENRIQUECIMENTO_SEGUNDOS)) em vez do
+# 1 req/s de crawling em lote, um teto de concorrência por cima disso, e
+# cache em memória com TTL (marca de um produto já registrado muda
+# raríssimo, e buscas populares — "whey", "creatina" — se repetem entre
+# usuários).
+#
+# **1º bug real, pego revisando depois de deploy** ("a busca tá devagar"):
+# a primeira versão já tinha um semáforo de concorrência aqui, mas cada
+# chamada de detalhe ainda passava pelo `RateLimiter` de 1 req/s
+# compartilhado pelo cliente inteiro — o semáforo limitava quantas
+# tarefas ficavam *em voo*, mas todas esperavam a mesma fila de 1s antes
+# de disparar. Na prática, zero concorrência de verdade, só 1 req/s
+# serial de qualquer jeito (~N segundos pra N itens).
+#
+# **2º achado real, testando o fix do 1º ao vivo**: tirar o limite por
+# completo (nenhum limiter, só o semáforo) faz uma busca ampla de ~50
+# itens tomar HTTP 429 da própria ANVISA numa fração real dos itens
+# (confirmado ao vivo, repetidas vezes) — o 1 req/s do resto do projeto
+# não é só cortesia arbitrária, esse domínio rate-limita de verdade sob
+# rajada. Por isso o limiter dedicado (mais rápido que 1 req/s, mas ainda
+# um limiter de verdade, não um bypass total) em vez de só concorrência
+# crua. Números escolhidos com margem de segurança (não é o teto exato
+# medido — testar o teto exato exigiria continuar martelando a API real,
+# o que não faz sentido fazer só pra calibrar); casos comuns (busca
+# filtrada por marca/empresa, poucos itens — ver exemplo real no
+# research/FONTES.md) terminam em menos de 1s de qualquer forma, o que
+# importa aqui é não tomar 429 numa busca ampla de 50.
+_INTERVALO_ENRIQUECIMENTO_SEGUNDOS = 0.25
+_CONCORRENCIA_ENRIQUECIMENTO_MARCAS = 6
+_TIMEOUT_ENRIQUECIMENTO_MARCAS_SEGUNDOS = 15.0
 _TTL_CACHE_MARCAS_SEGUNDOS = 3600.0
 _MAX_CACHE_MARCAS = 2000
 
@@ -456,7 +508,7 @@ async def _marcas_com_cache(cliente: ConsultasAnvisaClient, numero_processo: str
     if em_cache is not None and agora - em_cache[0] < _TTL_CACHE_MARCAS_SEGUNDOS:
         return em_cache[1]
     try:
-        produto = await detalhe_produto(cliente, numero_processo)
+        produto = await detalhe_produto(cliente, numero_processo, respeitar_limite=False)
     except (HTTPError, RequestException):
         # Uma falha pontual (timeout, 403 intermitente) não pode derrubar a
         # listagem inteira — o item só fica sem marca dessa vez, não é
@@ -472,12 +524,13 @@ async def _marcas_com_cache(cliente: ConsultasAnvisaClient, numero_processo: str
 async def _enriquecer_com_marcas(
     cliente: ConsultasAnvisaClient, itens: list[ProdutoAlimento]
 ) -> None:
-    """Preenche `item.marcas` em paralelo (`_CONCORRENCIA_ENRIQUECIMENTO_
-    MARCAS` de cada vez, não 1 req/s serial — decisão deliberada, ver nota
-    acima), com um teto de tempo total (`_TIMEOUT_ENRIQUECIMENTO_MARCAS_
-    SEGUNDOS`): itens que não terminaram a tempo simplesmente ficam sem
-    marca (lista some do card, resto da resposta não é afetado) em vez de
-    atrasar a resposta inteira indefinidamente."""
+    """Preenche `item.marcas` em paralelo (até `_CONCORRENCIA_ENRIQUECIMENTO_
+    MARCAS` de cada vez, no limiter mais rápido dedicado — não 1 req/s
+    serial nem bypass total, ver nota acima), com um teto de tempo total
+    (`_TIMEOUT_ENRIQUECIMENTO_MARCAS_SEGUNDOS`): itens que não terminaram
+    a tempo simplesmente ficam sem marca (campo some do card, resto da
+    resposta não é afetado) em vez de atrasar a resposta inteira
+    indefinidamente."""
     semaforo = asyncio.Semaphore(_CONCORRENCIA_ENRIQUECIMENTO_MARCAS)
 
     async def _um(item: ProdutoAlimento) -> None:
