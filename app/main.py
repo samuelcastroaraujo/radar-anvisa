@@ -199,7 +199,13 @@ async def produtos_alimentos(
     resultado real da busca (achado real, confirmado com múltiplos termos
     — ver Addendum pós-M7) — expor um "total de resultados" fabricado
     numa ferramenta de compliance seria pior que não ter o campo. Pra
-    saber se há mais itens, pedir a página seguinte."""
+    saber se há mais itens, pedir a página seguinte.
+
+    `marcas` de cada item é enriquecido com uma chamada extra à ANVISA por
+    produto (a busca em lista nunca traz marca — achado real, ver
+    `_enriquecer_com_marcas` em `app/ingest/consultas_alimentos.py`),
+    concorrente e com cache em memória pra não pesar na velocidade de
+    resposta."""
     if tamanho_pagina <= 0 or tamanho_pagina > 50:
         raise HTTPException(status_code=422, detail="tamanho_pagina deve estar entre 1 e 50")
     if pagina <= 0:
@@ -220,6 +226,7 @@ async def produtos_alimentos(
             situacao_registro=situacao_registro,
             pagina=pagina,
             tamanho_pagina=tamanho_pagina,
+            enriquecer_marcas=True,
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc

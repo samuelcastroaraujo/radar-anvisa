@@ -215,6 +215,12 @@ export default async function ProdutosPage({
                 {produto.detentor_razao_social ?? "—"}
                 {produto.detentor_cnpj ? ` · CNPJ ${produto.detentor_cnpj}` : ""}
               </p>
+              {produto.marcas.length > 0 && (
+                <p className="text-xs">
+                  <span className="font-medium text-foreground">Marca do produto:</span>{" "}
+                  <span className="text-muted-foreground">{produto.marcas.join(", ")}</span>
+                </p>
+              )}
               {produto.categorias.length > 0 && (
                 <p className="text-xs text-muted-foreground">
                   {produto.categorias.join(", ")}

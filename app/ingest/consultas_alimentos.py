@@ -26,7 +26,9 @@ projeto.
 
 from __future__ import annotations
 
+import asyncio
 import re
+import time
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Protocol, cast
@@ -311,6 +313,7 @@ async def buscar_produtos(
     situacao_registro: str | None = None,
     pagina: int = 1,
     tamanho_pagina: int = 10,
+    enriquecer_marcas: bool = False,
 ) -> ResultadoBuscaProdutos:
     """Busca produtos de alimentos (inclui suplementos) por nome, marca,
     CNPJ/razão social do detentor, nº de processo, nº de registro/
@@ -333,7 +336,14 @@ async def buscar_produtos(
     a busca de empresa devolveu, parando no primeiro que trouxer algum
     produto. Nenhum candidato com produto = devolve o resultado vazio do
     último tentado (ou filtro de empresa ignorado, se não achou empresa
-    nenhuma e sobrou outro filtro pra usar)."""
+    nenhuma e sobrou outro filtro pra usar).
+
+    `enriquecer_marcas=True` preenche `marcas` de cada item retornado —
+    a busca em lista nunca traz marca (achado real, campo sempre `null`
+    na resposta da ANVISA, só o endpoint de detalhe tem; ver
+    `_enriquecer_com_marcas`). Opt-in (default `False`) pra quem só quer
+    a lista crua pagar o custo extra — hoje só `GET /produtos/alimentos`
+    pede isso."""
     if situacao_registro is not None and situacao_registro not in _SITUACAO_PRODUTO_MAP:
         raise ValueError(
             f"situacao_registro inválido: {situacao_registro!r} (esperado 'Ativo' ou 'Inativo')"
@@ -395,8 +405,10 @@ async def buscar_produtos(
         resp = await cliente._get("/api/consulta/alimento/produtos/", params=params)
         resultado = _parse_resultado(resp.json())
         if resultado.itens:
-            return resultado
+            break
     assert resultado is not None  # o loop roda pelo menos 1x (candidatos_cnpj nunca é [])
+    if enriquecer_marcas and resultado.itens:
+        await _enriquecer_com_marcas(cliente, resultado.itens)
     return resultado
 
 
@@ -412,3 +424,69 @@ async def detalhe_produto(
             return None
         raise
     return _parse_produto(resp.json())
+
+
+# --- Enriquecimento de marca para a listagem (opt-in, ver buscar_produtos) ---
+#
+# Achado real: `marcas` vem sempre `null` na busca em lista (confirmado nas
+# amostras reais — nenhum dos 11 itens de `consultas_alimentos_busca_whey.
+# json` tem `marcas` preenchido), só o endpoint de detalhe traz. Não existe
+# endpoint em lote pra isso (mapeado lendo o JS-fonte do Angular, ver
+# research/FONTES.md) — a única forma de mostrar "Marca do Produto" em cada
+# card da listagem é uma chamada de detalhe por item.
+#
+# Pra não pagar N segundos (1 req/s é a política de crawling em lote do
+# projeto, seção 0 de research/FONTES.md) numa busca interativa de 1
+# usuário — volume já limitado por `tamanho_pagina` (máx. 50, validado em
+# app/main.py) — duas coisas escopadas só pra este enriquecimento, não pro
+# resto do módulo: concorrência limitada em vez de 1 req/s serial, e cache
+# em memória com TTL (marca de um produto já registrado muda raríssimo, e
+# buscas populares — "whey", "creatina" — se repetem entre usuários).
+_CONCORRENCIA_ENRIQUECIMENTO_MARCAS = 8
+_TIMEOUT_ENRIQUECIMENTO_MARCAS_SEGUNDOS = 12.0
+_TTL_CACHE_MARCAS_SEGUNDOS = 3600.0
+_MAX_CACHE_MARCAS = 2000
+
+_cache_marcas: dict[str, tuple[float, list[str]]] = {}
+
+
+async def _marcas_com_cache(cliente: ConsultasAnvisaClient, numero_processo: str) -> list[str]:
+    agora = time.monotonic()
+    em_cache = _cache_marcas.get(numero_processo)
+    if em_cache is not None and agora - em_cache[0] < _TTL_CACHE_MARCAS_SEGUNDOS:
+        return em_cache[1]
+    try:
+        produto = await detalhe_produto(cliente, numero_processo)
+    except (HTTPError, RequestException):
+        # Uma falha pontual (timeout, 403 intermitente) não pode derrubar a
+        # listagem inteira — o item só fica sem marca dessa vez, não é
+        # reescrito no cache (próxima busca tenta de novo).
+        return []
+    marcas = produto.marcas if produto is not None else []
+    if len(_cache_marcas) >= _MAX_CACHE_MARCAS:
+        _cache_marcas.pop(next(iter(_cache_marcas)))  # FIFO simples, não é LRU de verdade
+    _cache_marcas[numero_processo] = (agora, marcas)
+    return marcas
+
+
+async def _enriquecer_com_marcas(
+    cliente: ConsultasAnvisaClient, itens: list[ProdutoAlimento]
+) -> None:
+    """Preenche `item.marcas` em paralelo (`_CONCORRENCIA_ENRIQUECIMENTO_
+    MARCAS` de cada vez, não 1 req/s serial — decisão deliberada, ver nota
+    acima), com um teto de tempo total (`_TIMEOUT_ENRIQUECIMENTO_MARCAS_
+    SEGUNDOS`): itens que não terminaram a tempo simplesmente ficam sem
+    marca (lista some do card, resto da resposta não é afetado) em vez de
+    atrasar a resposta inteira indefinidamente."""
+    semaforo = asyncio.Semaphore(_CONCORRENCIA_ENRIQUECIMENTO_MARCAS)
+
+    async def _um(item: ProdutoAlimento) -> None:
+        async with semaforo:
+            item.marcas = await _marcas_com_cache(cliente, item.numero_processo)
+
+    tarefas = [asyncio.ensure_future(_um(item)) for item in itens]
+    _concluidas, pendentes = await asyncio.wait(
+        tarefas, timeout=_TIMEOUT_ENRIQUECIMENTO_MARCAS_SEGUNDOS
+    )
+    for tarefa in pendentes:
+        tarefa.cancel()

@@ -19,6 +19,7 @@ from curl_cffi.requests.exceptions import HTTPError
 from app.ingest.consultas_alimentos import (
     BASE_URL,
     ConsultasAnvisaClient,
+    _cache_marcas,
     _eh_cnpj,
     _eh_processo_nao_encontrado,
     _parse_resultado,
@@ -32,6 +33,17 @@ SAMPLES = Path(__file__).resolve().parent.parent / "research" / "samples"
 
 def _carregar(nome: str) -> dict:
     return json.loads((SAMPLES / nome).read_text(encoding="utf-8"))
+
+
+@pytest.fixture(autouse=True)
+def _limpar_cache_marcas():
+    """O cache de `marcas` (ver `_enriquecer_com_marcas`) é módulo-level —
+    limpa antes/depois de cada teste pra um teste não "ver" o resultado
+    cacheado por outro (vários testes reaproveitam os mesmos números de
+    processo de exemplo)."""
+    _cache_marcas.clear()
+    yield
+    _cache_marcas.clear()
 
 
 class FakeResponse:
@@ -344,3 +356,152 @@ def test_eh_processo_nao_encontrado_nao_confunde_com_500_de_verdade() -> None:
     resp_generico = FakeResponse(500, {"error": "erro genérico de servidor"})
     exc_generico = HTTPError("x", response=resp_generico)
     assert not _eh_processo_nao_encontrado(exc_generico)
+
+
+# --- Enriquecimento de marca na listagem (`enriquecer_marcas=True`) ---
+# `marcas` sempre vem `null` na busca em lista (achado real, ver docstring
+# de `_enriquecer_com_marcas` em app/ingest/consultas_alimentos.py) — só o
+# endpoint de detalhe tem. Listagem pequena e sob controle (não a amostra
+# real de 10 itens) pra deixar explícito quais processos geram quais
+# chamadas de detalhe.
+_LISTAGEM_DOIS_ITENS = {
+    "content": [
+        {
+            "detentorRegistro": {"cnpj": "111", "razaoSocial": "Empresa 1"},
+            "produto": {
+                "descricao": "Produto 1",
+                "numeroRegistroOuNotificacao": "1",
+                "situacaoRegistro": "Ativo",
+                "tipoRegularizacao": "Notificado",
+            },
+            "processo": {"numero": "PROC1"},
+            "categorias": None,
+            "marcas": None,
+        },
+        {
+            "detentorRegistro": {"cnpj": "222", "razaoSocial": "Empresa 2"},
+            "produto": {
+                "descricao": "Produto 2",
+                "numeroRegistroOuNotificacao": "2",
+                "situacaoRegistro": "Ativo",
+                "tipoRegularizacao": "Notificado",
+            },
+            "processo": {"numero": "PROC2"},
+            "categorias": None,
+            "marcas": None,
+        },
+        {  # o "+1" real da API (ver test_parse_resultado_corta_pro_tamanho_pedido)
+            "detentorRegistro": {"cnpj": "333", "razaoSocial": "Empresa 3"},
+            "produto": {
+                "descricao": "Produto 3",
+                "numeroRegistroOuNotificacao": "3",
+                "situacaoRegistro": "Ativo",
+                "tipoRegularizacao": "Notificado",
+            },
+            "processo": {"numero": "PROC3"},
+            "categorias": None,
+            "marcas": None,
+        },
+    ],
+    "size": 2,
+    "number": 0,
+}
+
+
+def _detalhe_com_marcas(numero_processo: str, marcas: list[str]) -> dict:
+    return {
+        "detentorRegistro": {"cnpj": "111", "razaoSocial": "Empresa"},
+        "produto": {
+            "descricao": "Produto",
+            "numeroRegistroOuNotificacao": numero_processo,
+            "situacaoRegistro": "Ativo",
+            "tipoRegularizacao": "Notificado",
+        },
+        "processo": {"numero": numero_processo},
+        "categorias": None,
+        "marcas": [{"descricao": m} for m in marcas],
+    }
+
+
+async def test_buscar_produtos_nao_enriquece_marcas_por_padrao() -> None:
+    """`enriquecer_marcas` é opt-in (default `False`) — sem ele, nenhuma
+    chamada de detalhe é feita (só a de busca em lista)."""
+
+    def handler(url: str, params: dict[str, str] | None) -> FakeResponse:
+        assert url == f"{BASE_URL}/api/consulta/alimento/produtos/"
+        return FakeResponse(200, _LISTAGEM_DOIS_ITENS)
+
+    cliente = ConsultasAnvisaClient(sessao=FakeSession(handler))
+    resultado = await buscar_produtos(cliente, nome_produto="x", tamanho_pagina=2)
+    await cliente.aclose()
+
+    assert len(resultado.itens) == 2
+    assert all(item.marcas == [] for item in resultado.itens)
+
+
+async def test_buscar_produtos_enriquece_marcas_quando_pedido() -> None:
+    def handler(url: str, params: dict[str, str] | None) -> FakeResponse:
+        if url == f"{BASE_URL}/api/consulta/alimento/produtos/":
+            return FakeResponse(200, _LISTAGEM_DOIS_ITENS)
+        if url == f"{BASE_URL}/api/consulta/alimento/produtos/PROC1":
+            return FakeResponse(200, _detalhe_com_marcas("PROC1", ["MARCA UM"]))
+        if url == f"{BASE_URL}/api/consulta/alimento/produtos/PROC2":
+            return FakeResponse(200, _detalhe_com_marcas("PROC2", ["MARCA DOIS", "MARCA DOIS B"]))
+        raise AssertionError(f"chamada inesperada: {url}")
+
+    cliente = ConsultasAnvisaClient(sessao=FakeSession(handler))
+    resultado = await buscar_produtos(
+        cliente, nome_produto="x", tamanho_pagina=2, enriquecer_marcas=True
+    )
+    await cliente.aclose()
+
+    por_processo = {item.numero_processo: item for item in resultado.itens}
+    assert por_processo["PROC1"].marcas == ["MARCA UM"]
+    assert por_processo["PROC2"].marcas == ["MARCA DOIS", "MARCA DOIS B"]
+
+
+async def test_buscar_produtos_enriquecimento_usa_cache_entre_buscas() -> None:
+    """Achado real motivando o cache: a mesma busca popular ("whey" etc.)
+    tende a se repetir — sem cache, cada busca pagaria de novo o custo de
+    1 chamada de detalhe por item, mesmo pros mesmos produtos de sempre."""
+    chamadas_detalhe: list[str] = []
+
+    def handler(url: str, params: dict[str, str] | None) -> FakeResponse:
+        if url == f"{BASE_URL}/api/consulta/alimento/produtos/":
+            return FakeResponse(200, _LISTAGEM_DOIS_ITENS)
+        chamadas_detalhe.append(url)
+        numero = url.rsplit("/", 1)[-1]
+        return FakeResponse(200, _detalhe_com_marcas(numero, [f"MARCA {numero}"]))
+
+    cliente = ConsultasAnvisaClient(sessao=FakeSession(handler))
+    await buscar_produtos(cliente, nome_produto="x", tamanho_pagina=2, enriquecer_marcas=True)
+    await buscar_produtos(cliente, nome_produto="x", tamanho_pagina=2, enriquecer_marcas=True)
+    await cliente.aclose()
+
+    # PROC1 + PROC2 = 2 processos únicos -> só 2 chamadas de detalhe no
+    # total, mesmo rodando a busca duas vezes (a segunda vem do cache).
+    assert len(chamadas_detalhe) == 2
+
+
+async def test_buscar_produtos_enriquecimento_item_com_falha_nao_derruba_lista() -> None:
+    """Um item que falha ao buscar marca (aqui: "processo não encontrado",
+    que não gera retry — ver test_eh_processo_nao_encontrado_nao_confunde_
+    com_500_de_verdade) só fica sem marca; não derruba a listagem inteira."""
+    erro = _carregar("consultas_alimentos_processo_inexistente.json")
+
+    def handler(url: str, params: dict[str, str] | None) -> FakeResponse:
+        if url == f"{BASE_URL}/api/consulta/alimento/produtos/":
+            return FakeResponse(200, _LISTAGEM_DOIS_ITENS)
+        if url == f"{BASE_URL}/api/consulta/alimento/produtos/PROC1":
+            return FakeResponse(200, _detalhe_com_marcas("PROC1", ["MARCA UM"]))
+        return FakeResponse(500, erro)  # PROC2
+
+    cliente = ConsultasAnvisaClient(sessao=FakeSession(handler))
+    resultado = await buscar_produtos(
+        cliente, nome_produto="x", tamanho_pagina=2, enriquecer_marcas=True
+    )
+    await cliente.aclose()
+
+    por_processo = {item.numero_processo: item for item in resultado.itens}
+    assert por_processo["PROC1"].marcas == ["MARCA UM"]
+    assert por_processo["PROC2"].marcas == []
