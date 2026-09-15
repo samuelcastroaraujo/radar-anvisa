@@ -19,8 +19,10 @@ from curl_cffi.requests.exceptions import HTTPError
 from app.ingest.consultas_alimentos import (
     BASE_URL,
     ConsultasAnvisaClient,
+    _eh_cnpj,
     _eh_processo_nao_encontrado,
     _parse_resultado,
+    buscar_empresas,
     buscar_produtos,
     detalhe_produto,
 )
@@ -157,6 +159,123 @@ async def test_buscar_produtos_usa_a_api_real() -> None:
     assert primeiro.detentor_cnpj == "22810604000136"
     assert primeiro.numero_processo == "25351130780202618"
     assert primeiro.url_origem == f"{BASE_URL}/#/alimentos/25351130780202618/"
+
+
+def test_eh_cnpj() -> None:
+    assert _eh_cnpj("22810604000136")
+    assert _eh_cnpj("22.810.604/0001-36")
+    assert not _eh_cnpj("Absolut Nutrition")
+    assert not _eh_cnpj("228106")  # CNPJ parcial — achado real: a API rejeita
+
+
+_EMPRESA_BELAPIN = {
+    "content": [
+        {"cnpj": "68044700000111", "razaoSocial": "BELAPIN COMERCIO DE ALIMENTOS LTDA"},
+        {"cnpj": "68044700000545", "razaoSocial": "BELAPIN INDUSTRIA E COMERCIO LTDA"},
+    ],
+    "size": 2,
+}
+
+
+async def test_buscar_empresas_usa_endpoint_separado_de_produtos() -> None:
+    def handler(url: str, params: dict[str, str] | None) -> FakeResponse:
+        assert url == f"{BASE_URL}/api/empresa/"
+        assert params is not None
+        assert params.get("filter[razaoSocial]") == "belapin"
+        return FakeResponse(200, _EMPRESA_BELAPIN)
+
+    cliente = ConsultasAnvisaClient(sessao=FakeSession(handler))
+    empresas = await buscar_empresas(cliente, "belapin")
+    await cliente.aclose()
+
+    assert [e.cnpj for e in empresas] == ["68044700000111", "68044700000545"]
+
+
+async def test_buscar_produtos_resolve_nome_de_empresa_para_cnpj() -> None:
+    """Achado real: `filter[detentorRegistro]` só aceita CNPJ exato — nome
+    de empresa (mesmo completo) devolve 0 resultados na API de verdade.
+    `buscar_produtos` resolve o nome via `buscar_empresas` antes de
+    filtrar produtos, igual ao autocomplete da página oficial."""
+    chamadas_produtos: list[dict[str, str] | None] = []
+
+    def handler(url: str, params: dict[str, str] | None) -> FakeResponse:
+        if url == f"{BASE_URL}/api/empresa/":
+            assert params is not None
+            assert params.get("filter[razaoSocial]") == "belapin"
+            return FakeResponse(200, _EMPRESA_BELAPIN)
+        assert url == f"{BASE_URL}/api/consulta/alimento/produtos/"
+        chamadas_produtos.append(params)
+        # só o PRIMEIRO CNPJ candidato tem o produto — achado real testando
+        # "belapin" ao vivo (2º de 4 candidatos reais tinha o produto).
+        assert params is not None
+        payload = (
+            _carregar("consultas_alimentos_busca_whey.json")
+            if params.get("filter[detentorRegistro]") == "68044700000111"
+            else {"content": [], "size": params.get("count")}
+        )
+        return FakeResponse(200, payload)
+
+    cliente = ConsultasAnvisaClient(sessao=FakeSession(handler))
+    resultado = await buscar_produtos(cliente, nome_produto="whey", detentor_registro="belapin")
+    await cliente.aclose()
+
+    assert len(resultado.itens) > 0
+    assert chamadas_produtos[0] is not None
+    assert chamadas_produtos[0]["filter[detentorRegistro]"] == "68044700000111"
+
+
+async def test_buscar_produtos_tenta_proximo_candidato_se_primeiro_vazio() -> None:
+    """Achado real testando "belapin" ao vivo: o 1º CNPJ candidato não
+    tinha o produto buscado, o 2º tinha — sem tentar mais de um, a busca
+    dava falso-negativo pra uma empresa real com produto real."""
+
+    def handler(url: str, params: dict[str, str] | None) -> FakeResponse:
+        if url == f"{BASE_URL}/api/empresa/":
+            return FakeResponse(200, _EMPRESA_BELAPIN)
+        assert params is not None
+        if params.get("filter[detentorRegistro]") == "68044700000111":
+            return FakeResponse(200, {"content": [], "size": int(params["count"])})
+        return FakeResponse(200, _carregar("consultas_alimentos_busca_whey.json"))
+
+    cliente = ConsultasAnvisaClient(sessao=FakeSession(handler))
+    resultado = await buscar_produtos(cliente, nome_produto="whey", detentor_registro="belapin")
+    await cliente.aclose()
+
+    assert len(resultado.itens) > 0
+
+
+async def test_buscar_produtos_nenhum_candidato_com_produto_devolve_vazio() -> None:
+    def handler(url: str, params: dict[str, str] | None) -> FakeResponse:
+        if url == f"{BASE_URL}/api/empresa/":
+            return FakeResponse(200, _EMPRESA_BELAPIN)
+        assert params is not None
+        return FakeResponse(200, {"content": [], "size": int(params["count"])})
+
+    cliente = ConsultasAnvisaClient(sessao=FakeSession(handler))
+    resultado = await buscar_produtos(cliente, nome_produto="whey", detentor_registro="belapin")
+    await cliente.aclose()
+
+    assert resultado.itens == []
+
+
+async def test_buscar_produtos_empresa_nao_encontrada_ignora_filtro_de_empresa() -> None:
+    """Nenhuma empresa com esse nome -> filtro de empresa é descartado,
+    não vira erro (desde que sobre outro filtro válido)."""
+
+    def handler(url: str, params: dict[str, str] | None) -> FakeResponse:
+        if url == f"{BASE_URL}/api/empresa/":
+            return FakeResponse(200, {"content": [], "size": 0})
+        assert params is not None
+        assert "filter[detentorRegistro]" not in params
+        return FakeResponse(200, _carregar("consultas_alimentos_busca_whey.json"))
+
+    cliente = ConsultasAnvisaClient(sessao=FakeSession(handler))
+    resultado = await buscar_produtos(
+        cliente, nome_produto="whey", detentor_registro="empresa que nao existe"
+    )
+    await cliente.aclose()
+
+    assert len(resultado.itens) > 0
 
 
 async def test_detalhe_produto_extrai_categorias_e_marcas() -> None:

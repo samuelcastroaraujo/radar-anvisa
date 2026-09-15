@@ -1,7 +1,8 @@
 """Roteamento de intenção da pergunta do usuário — seção 7 do briefing:
 pergunta sobre norma específica -> lookup direto; temática -> busca
 híbrida; temporal -> consulta por data; consulta pública -> ainda não
-implementado (depende do módulo 630, que é M5).
+implementado (depende do módulo 630, que é M5); produto de alimento/
+suplemento -> consulta ao vivo na ANVISA (pós-M7, ver CLAUDE.md).
 """
 
 from __future__ import annotations
@@ -10,7 +11,9 @@ import re
 from dataclasses import dataclass
 from typing import Literal
 
-TipoIntencao = Literal["norma_especifica", "temporal", "consulta_publica", "tematica"]
+TipoIntencao = Literal[
+    "norma_especifica", "temporal", "consulta_publica", "produto_alimento", "tematica"
+]
 
 # Grupos de sigla equivalentes — a base tem uma inconsistência real (ver
 # CLAUDE.md, M4): o mesmo tipo de ato legal aparece sob códigos diferentes
@@ -61,6 +64,22 @@ _RE_CONSULTA_PUBLICA = re.compile(
 )
 
 _RE_DIAS = re.compile(r"(\d+)\s+dias", re.IGNORECASE)
+
+# Produto de alimento/suplemento (não norma) — o sinal linguístico real é
+# diferente do de norma: normas são "vigentes"/"revogadas", produtos são
+# "registrados"/"regularizados"/"notificados" (situação de registro
+# sanitário). Exige um verbo copulativo ("está", "é", "foi"...) logo antes
+# do particípio — não o particípio sozinho — pra não confundir uma
+# pergunta sobre STATUS de um produto específico ("essa whey está
+# regularizada?") com uma pergunta temática sobre o processo em geral
+# ("como funciona a notificação de suplementos?", que deve continuar
+# indo pra busca temática/RAG).
+_RE_PRODUTO_ALIMENTO = re.compile(
+    r"\b(est\w*|s[aã]o|[eé]|foi|foram|ficou|ficaram|continua\w*)\s+\w*\s*"
+    r"(regulariz\w*|registrad[oa]s?|notificad[oa]s?|anu[ií]d[oa]s?)\b"
+    r"|\b(tem|t[eê]m|possui\w*)\s+(registro|notifica[cç][aã]o)\b",
+    re.IGNORECASE,
+)
 
 
 @dataclass
@@ -120,6 +139,9 @@ def detectar_intencao(pergunta: str) -> Intencao:
                 ano=int(m.group(3)),
             ),
         )
+
+    if _RE_PRODUTO_ALIMENTO.search(pergunta):
+        return Intencao(tipo="produto_alimento")
 
     if _RE_CONSULTA_PUBLICA.search(pergunta):
         return Intencao(tipo="consulta_publica")

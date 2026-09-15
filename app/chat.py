@@ -1,13 +1,16 @@
 """Orquestração do RAG conversacional — seção 7 do briefing.
 
 Fluxo: detecta a intenção da pergunta (app/intent.py) -> monta o contexto
-apropriado (lookup direto, busca híbrida escopada, ou consulta temporal) ->
-chama o LLM (app/llm.py) com as regras absolutas -> monta a resposta
-estruturada (normas citadas, pra o frontend renderizar cards).
+apropriado (lookup direto, busca híbrida escopada, consulta temporal, ou
+consulta ao vivo de produto) -> chama o LLM (app/llm.py) com as regras
+absolutas -> monta a resposta estruturada (normas/produtos citados, pra o
+frontend renderizar cards).
 
-Duas intenções ainda não têm dado de verdade por trás (consulta pública
-depende do módulo 630, que é M5) — nesses casos a resposta é honesta e
-determinística, sem gastar uma chamada de LLM à toa.
+Uma intenção ainda não tem dado de verdade por trás (consulta pública
+depende do módulo 630, que é M5) — nesse caso a resposta é honesta e
+determinística, sem gastar uma chamada de LLM à toa. `produto_alimento`
+(pós-M7) é parecida mas com dado vivo: não indexado no banco, consultado
+na hora direto na API da ANVISA (`app/ingest/consultas_alimentos.py`).
 """
 
 from __future__ import annotations
@@ -18,15 +21,24 @@ from datetime import UTC, datetime, timedelta
 
 import asyncpg
 import asyncpg.pool
+from curl_cffi.requests.exceptions import RequestException
 
 from app.busca import FiltroBusca, ResultadoBusca, buscar
+from app.ingest.consultas_alimentos import (
+    ConsultasAnvisaClient,
+    ProdutoAlimento,
+    ResultadoBuscaProdutos,
+    buscar_produtos,
+)
 from app.intent import Intencao, NormaReferenciada, detectar_intencao
-from app.llm import perguntar
+from app.llm import TermosBuscaProduto, extrair_termos_busca_produto, perguntar
 
 Conn = asyncpg.pool.PoolConnectionProxy | asyncpg.Connection
 
 MAX_CHUNKS_CONTEXTO = 8
+MAX_PRODUTOS_CONTEXTO = 5
 URLS_APOIO = "https://www.gov.br/anvisa/pt-br ou https://anvisalegis.datalegis.net"
+URL_CONSULTA_PRODUTOS = "https://consultas.anvisa.gov.br/#/alimentos/"
 
 
 @dataclass
@@ -40,11 +52,21 @@ class NormaCitada:
 
 
 @dataclass
+class ProdutoCitado:
+    numero_processo: str
+    descricao: str
+    situacao_registro: str | None
+    detentor_razao_social: str | None
+    url_origem: str
+
+
+@dataclass
 class RespostaChat:
     resposta: str
     fontes: list[str]
     normas: list[NormaCitada]
     intencao: str
+    produtos: list[ProdutoCitado] = field(default_factory=list)
     n_chunks_recuperados: int = 0
     teve_citacao: bool = False
     tokens_entrada: int = 0
@@ -228,10 +250,131 @@ async def _contexto_temporal(conn: Conn, dias: int) -> tuple[str, list[NormaCita
     return "\n".join(partes), citadas, fontes
 
 
-def _resposta_nao_encontrei(motivo: str) -> RespostaChat:
+def _descrever_termos(termos: TermosBuscaProduto) -> str:
+    partes = []
+    if termos.nome_produto:
+        partes.append(f'produto "{termos.nome_produto}"')
+    if termos.marca:
+        partes.append(f'marca "{termos.marca}"')
+    if termos.detentor_registro:
+        partes.append(f'empresa "{termos.detentor_registro}"')
+    return ", ".join(partes) if partes else "(nada identificado na pergunta)"
+
+
+def _combinacoes_busca(termos: TermosBuscaProduto) -> list[dict[str, str]]:
+    """Degraus de relaxamento, do mais específico pro mais genérico —
+    achado real testando de ponta a ponta: a extração por LLM às vezes
+    erra pro lado específico demais (nome composto que não bate com a
+    descrição telegráfica da ANVISA — "whey protein" não acha nada, só
+    "whey" acha — ou o mesmo nome de empresa duplicado em `marca`), e
+    como todo filtro é combinado com AND na API, isso dá falso-negativo
+    pra um produto que existe de verdade. Tenta a combinação completa
+    primeiro; se vier vazia, relaxa indo pra combinações com menos
+    filtros, sempre priorizando manter `nome_produto` (é o termo mais
+    provável de estar certo — a extração já é instruída a manter isso
+    curto/genérico)."""
+    base = {
+        "nome_produto": termos.nome_produto,
+        "marca": termos.marca,
+        "detentor_registro": termos.detentor_registro,
+    }
+    candidatas = [
+        base,
+        {"nome_produto": base["nome_produto"], "detentor_registro": base["detentor_registro"]},
+        {"nome_produto": base["nome_produto"], "marca": base["marca"]},
+        {"nome_produto": base["nome_produto"]},
+        {"marca": base["marca"]},
+        {"detentor_registro": base["detentor_registro"]},
+    ]
+    vistas: set[tuple[tuple[str, str], ...]] = set()
+    combinacoes: list[dict[str, str]] = []
+    for candidata in candidatas:
+        limpo = {k: v for k, v in candidata.items() if v}
+        if not limpo:
+            continue
+        chave = tuple(sorted(limpo.items()))
+        if chave in vistas:
+            continue
+        vistas.add(chave)
+        combinacoes.append(limpo)
+    return combinacoes
+
+
+async def _buscar_produtos_para_chat(
+    termos: TermosBuscaProduto,
+) -> ResultadoBuscaProdutos | None:
+    """`None` = não deu pra consultar a ANVISA agora (erro de rede/HTTP
+    depois de esgotar o retry do `ConsultasAnvisaClient`) — distinto de
+    "consultou e não achou nada" (lista vazia), tratado separado por quem
+    chama pra não confundir os dois motivos de "não encontrei". Tenta os
+    degraus de `_combinacoes_busca` em sequência, parando no primeiro que
+    trouxer algum produto."""
+    cliente = ConsultasAnvisaClient()
+    try:
+        resultado: ResultadoBuscaProdutos | None = None
+        for filtros in _combinacoes_busca(termos):
+            resultado = await buscar_produtos(
+                cliente,
+                nome_produto=filtros.get("nome_produto"),
+                marca=filtros.get("marca"),
+                detentor_registro=filtros.get("detentor_registro"),
+                tamanho_pagina=MAX_PRODUTOS_CONTEXTO,
+            )
+            if resultado.itens:
+                return resultado
+        return resultado
+    except RequestException:
+        return None
+    finally:
+        await cliente.aclose()
+
+
+def _contexto_produto_alimento(
+    itens: list[ProdutoAlimento],
+) -> tuple[str, list[ProdutoCitado], list[str]]:
+    aviso = (
+        "AVISO IMPORTANTE PARA VOCÊ, ASSISTENTE: os produtos abaixo vêm de uma consulta "
+        "AO VIVO no cadastro de produtos regularizados da ANVISA (não é uma base indexada "
+        "aqui, é a fonte oficial na hora). Informe a SITUAÇÃO DO REGISTRO (Ativo/Inativo) "
+        "de cada produto já na primeira frase, antes de qualquer outra coisa — 'Inativo' "
+        "quer dizer que o registro/notificação NÃO está mais válido perante a ANVISA "
+        "nesta data, mesmo que o produto continue sendo vendido. Se vieram vários "
+        "produtos parecidos (marcas/apresentações diferentes), deixe claro que a lista "
+        "é a mais próxima da pergunta, não necessariamente o produto exato."
+    )
+    partes = [aviso, ""]
+    citados = []
+    fontes = []
+    for p in itens:
+        empresa = p.detentor_razao_social or "(não informado)"
+        if p.detentor_cnpj:
+            empresa += f" (CNPJ {p.detentor_cnpj})"
+        partes.append(
+            f"[PRODUTO] {p.descricao}\n"
+            f"Situação do registro: {(p.situacao_registro or 'DESCONHECIDA').upper()}\n"
+            f"Tipo de regularização: {p.tipo_regularizacao or '(não informado)'}\n"
+            f"Nº de registro/notificação: {p.numero_registro_ou_notificacao}\n"
+            f"Empresa detentora: {empresa}\n"
+            f"Categorias: {', '.join(p.categorias) if p.categorias else '(não informado)'}\n"
+            f"Vencimento: {p.mes_ano_vencimento or '(não informado)'}\n"
+            f"Fonte: {p.url_origem}\n"
+        )
+        citados.append(
+            ProdutoCitado(
+                numero_processo=p.numero_processo,
+                descricao=p.descricao,
+                situacao_registro=p.situacao_registro,
+                detentor_razao_social=p.detentor_razao_social,
+                url_origem=p.url_origem,
+            )
+        )
+        fontes.append(p.url_origem)
+    return "\n".join(partes), citados, fontes
+
+
+def _resposta_nao_encontrei(motivo: str, urls: str = URLS_APOIO) -> RespostaChat:
     return RespostaChat(
-        resposta=f"Não encontrei isso na base indexada. {motivo} Verifique diretamente em "
-        f"{URLS_APOIO}.",
+        resposta=f"Não encontrei isso na base indexada. {motivo} Verifique diretamente em {urls}.",
         fontes=[],
         normas=[],
         intencao="nao_encontrado",
@@ -261,6 +404,11 @@ async def responder(pool: asyncpg.Pool, pergunta: str) -> RespostaChat:
     inicio = time.monotonic()
     intencao: Intencao = detectar_intencao(pergunta)
     resp: RespostaChat
+    contexto: str | None = None
+    normas: list[NormaCitada] = []
+    produtos: list[ProdutoCitado] = []
+    fontes: list[str] = []
+    n_chunks = 0
 
     if intencao.tipo == "consulta_publica":
         # módulo 630 (participação social) ainda não foi ingerido -- é M5.
@@ -270,6 +418,39 @@ async def responder(pool: asyncpg.Pool, pergunta: str) -> RespostaChat:
             "ainda não foi indexado nesta base."
         )
         resp.intencao = intencao.tipo
+    elif intencao.tipo == "produto_alimento":
+        # Consulta ao vivo (app/ingest/consultas_alimentos.py) — não passa
+        # pelo banco, por isso fica fora do `pool.acquire()` abaixo, igual
+        # a `consulta_publica`. Uma chamada de LLM barata extrai os termos
+        # de busca da pergunta livre (app/llm.py); a resposta final usa o
+        # mesmo `perguntar()` das outras intenções.
+        termos = await extrair_termos_busca_produto(pergunta)
+        if termos.vazio:
+            resp = _resposta_nao_encontrei(
+                "Não consegui identificar qual produto, marca ou empresa você quer "
+                "consultar — tente reformular citando o nome do produto ou da marca.",
+                urls=URL_CONSULTA_PRODUTOS,
+            )
+            resp.intencao = intencao.tipo
+        else:
+            resultado_busca = await _buscar_produtos_para_chat(termos)
+            if resultado_busca is None:
+                resp = _resposta_nao_encontrei(
+                    "Não consegui consultar a ANVISA agora (falha de rede). Tente de novo "
+                    "em instantes.",
+                    urls=URL_CONSULTA_PRODUTOS,
+                )
+                resp.intencao = intencao.tipo
+            elif not resultado_busca.itens:
+                resp = _resposta_nao_encontrei(
+                    f"Busquei ao vivo no cadastro de produtos da ANVISA por "
+                    f"{_descrever_termos(termos)} e não achei nenhum resultado.",
+                    urls=URL_CONSULTA_PRODUTOS,
+                )
+                resp.intencao = intencao.tipo
+            else:
+                contexto, produtos, fontes = _contexto_produto_alimento(resultado_busca.itens)
+                n_chunks = len(produtos)
     else:
         async with pool.acquire() as conn:
             if intencao.tipo == "norma_especifica":
@@ -281,7 +462,6 @@ async def responder(pool: asyncpg.Pool, pergunta: str) -> RespostaChat:
                         f"{intencao.norma.ano} na base."
                     )
                     resp.intencao = intencao.tipo
-                    contexto = None
                 else:
                     contexto, normas, fontes, n_chunks = await _contexto_norma_especifica(
                         conn, norma, pergunta
@@ -294,25 +474,27 @@ async def responder(pool: asyncpg.Pool, pergunta: str) -> RespostaChat:
                 if not resultados:
                     resp = _resposta_nao_encontrei("A busca não retornou nenhum trecho relevante.")
                     resp.intencao = intencao.tipo
-                    contexto = None
                 else:
                     contexto, normas, fontes = _contexto_tematico(resultados)
                     n_chunks = len(resultados)
 
-        if contexto is not None:
-            resultado_llm = await perguntar(contexto, pergunta)
-            teve_citacao = any(n.numero in resultado_llm.texto for n in normas)
-            resp = RespostaChat(
-                resposta=resultado_llm.texto,
-                fontes=fontes,
-                normas=normas,
-                intencao=intencao.tipo,
-                n_chunks_recuperados=n_chunks,
-                teve_citacao=teve_citacao,
-                tokens_entrada=resultado_llm.tokens_entrada,
-                tokens_saida=resultado_llm.tokens_saida,
-                custo_estimado=resultado_llm.custo_estimado,
-            )
+    if contexto is not None:
+        resultado_llm = await perguntar(contexto, pergunta)
+        teve_citacao = any(n.numero in resultado_llm.texto for n in normas) or any(
+            p.numero_processo in resultado_llm.texto for p in produtos
+        )
+        resp = RespostaChat(
+            resposta=resultado_llm.texto,
+            fontes=fontes,
+            normas=normas,
+            produtos=produtos,
+            intencao=intencao.tipo,
+            n_chunks_recuperados=n_chunks,
+            teve_citacao=teve_citacao,
+            tokens_entrada=resultado_llm.tokens_entrada,
+            tokens_saida=resultado_llm.tokens_saida,
+            custo_estimado=resultado_llm.custo_estimado,
+        )
 
     resp.latencia_ms = int((time.monotonic() - inicio) * 1000)
     await _registrar_metrica(pool, pergunta, resp)

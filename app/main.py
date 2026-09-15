@@ -260,10 +260,19 @@ class NormaCitadaResponse(BaseModel):
     url_origem: str
 
 
+class ProdutoCitadoResponse(BaseModel):
+    numero_processo: str
+    descricao: str
+    situacao_registro: str | None
+    detentor_razao_social: str | None
+    url_origem: str
+
+
 class RespostaChatAPI(BaseModel):
     resposta: str
     fontes: list[str]
     normas: list[NormaCitadaResponse]
+    produtos: list[ProdutoCitadoResponse] = []
 
 
 @app.post("/chat")
@@ -288,6 +297,16 @@ async def chat(payload: PerguntaChat) -> RespostaChatAPI:
                 url_origem=n.url_origem,
             )
             for n in resultado.normas
+        ],
+        produtos=[
+            ProdutoCitadoResponse(
+                numero_processo=p.numero_processo,
+                descricao=p.descricao,
+                situacao_registro=p.situacao_registro,
+                detentor_razao_social=p.detentor_razao_social,
+                url_origem=p.url_origem,
+            )
+            for p in resultado.produtos
         ],
     )
 

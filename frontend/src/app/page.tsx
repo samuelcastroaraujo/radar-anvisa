@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { NormaBadge } from "@/components/norma-badge";
-import type { NormaCitada } from "@/lib/api";
+import { SituacaoRegistroBadge } from "@/components/situacao-registro-badge";
+import type { NormaCitada, ProdutoCitado } from "@/lib/api";
 
 interface Mensagem {
   id: string;
@@ -15,6 +16,7 @@ interface Mensagem {
   texto: string;
   fontes?: string[];
   normas?: NormaCitada[];
+  produtos?: ProdutoCitado[];
 }
 
 export default function ChatPage() {
@@ -56,6 +58,7 @@ export default function ChatPage() {
           texto: dados.resposta,
           fontes: dados.fontes,
           normas: dados.normas,
+          produtos: dados.produtos,
         },
       ]);
     } catch (erro) {
@@ -86,7 +89,8 @@ export default function ChatPage() {
         {mensagens.length === 0 && (
           <div className="flex h-full flex-col items-center justify-center gap-3 text-center text-muted-foreground">
             <p className="text-sm">
-              Pergunte sobre normas, notícias ou consultas públicas da ANVISA.
+              Pergunte sobre normas, notícias, consultas públicas ou o registro de um
+              produto/suplemento na ANVISA.
             </p>
           </div>
         )}
@@ -157,6 +161,23 @@ function MensagemBolha({ mensagem }: { mensagem: Mensagem }) {
                   {norma.tipo_ato} {norma.numero}/{norma.ano}
                 </span>
                 <NormaBadge status={norma.status_vigencia} />
+              </a>
+            ))}
+          </div>
+        )}
+
+        {!!mensagem.produtos?.length && (
+          <div className="flex flex-wrap gap-2 border-t border-border pt-3">
+            {mensagem.produtos.map((produto) => (
+              <a
+                key={produto.numero_processo}
+                href={produto.url_origem}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent"
+              >
+                <span className="max-w-[16rem] truncate font-medium">{produto.descricao}</span>
+                <SituacaoRegistroBadge situacao={produto.situacao_registro} />
               </a>
             ))}
           </div>

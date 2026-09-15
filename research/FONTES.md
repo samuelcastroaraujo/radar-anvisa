@@ -695,6 +695,46 @@ pedido antes de devolver — testado ao vivo pedindo 1 item por vez nas
 páginas 1, 2 e 3 e comparando com uma busca de referência trazendo tudo
 de uma vez (`count=20`): bate exatamente, sem lacuna nem duplicata.
 
+### `filter[detentorRegistro]` só aceita CNPJ exato — endpoint separado de empresa achado
+
+Pedido do usuário: chat também responder perguntas de registro de
+produto, não só a aba `/produtos`. Testando de ponta a ponta com
+perguntas reais (ex.: "a creatina da belapin está registrada?"), a busca
+dava falso "não encontrei" pra produtos que existem de verdade.
+
+**Causa raiz confirmada ao vivo**: `filter[detentorRegistro]` só filtra
+por **CNPJ exato** — razão social, mesmo completa e exata
+(`"BELAPIN INDUSTRIA E COMERCIO DE ALIMENTICIOS LTDA"`), devolve
+`totalElements`/`content` vazio. CNPJ parcial (`"228106"`) também não
+funciona, só os 14 dígitos completos.
+
+A página oficial nunca manda texto livre pra esse filtro. Lendo
+`scripts/app/components/input-empresa/input-empresa.directive.js`: o
+campo "Empresa" do formulário de alimentos não é um `<input>` comum, é a
+diretiva `<input-empresa>`, que abre um modal de busca por razão social
+e só grava o **CNPJ resolvido** no filtro real. A busca desse modal usa
+`empresaService` (`scripts/services/empresa.service.js`), endpoint
+separado do de produtos:
+
+- `GET /api/empresa/?filter[razaoSocial]=belapin&page=1&count=5` — busca
+  por substring (case-insensitive, confirmado ao vivo), devolve
+  `{cnpj, razaoSocial, nomeFantasia}` por empresa.
+- `GET /api/empresa/{cnpj}` — detalhe de uma empresa por CNPJ
+  (`findByCnpj`). Achado incidental útil: devolve `nomeFantasia` (ex.:
+  CNPJ `22810604000136` → `nomeFantasia: "Absolut Nutrition"`) — pode
+  servir de fonte melhor pra "marca" no futuro do que o array `marcas`
+  de cada produto.
+
+**Achado extra, também confirmado ao vivo**: buscar `"belapin"` devolve
+**4 CNPJs candidatos** (grupo econômico com razões sociais quase
+idênticas) — só **um** deles (`68044700000545`) tinha o produto
+"creatina" buscado, e não era o primeiro da lista (`68044700000111`,
+sem esse produto). `buscar_produtos` (`app/ingest/consultas_alimentos.py`)
+agora resolve nome→CNPJ via `buscar_empresas` e tenta até 3 candidatos em
+sequência antes de desistir — corrigido na função usada tanto por
+`/produtos/alimentos` quanto pela integração do `/chat`, não duplicado
+em dois lugares.
+
 ## Resumo do que ficou pendente (nada foi inventado além disto)
 
 1. **`informes-de-seguranca`**: mudou para SPA em `consultas.anvisa.gov.br`;

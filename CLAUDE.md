@@ -922,6 +922,106 @@ alimentar, como em `https://consultas.anvisa.gov.br/#/alimentos/`.
   comparado com uma busca de referência `count=20`) que isso dá uma
   sequência sem lacuna nem duplicata. Ver Addendum pós-M7 em
   `research/FONTES.md` para os números completos do isolamento.
+- **Filtro de situação e paginação configurável (a pedido do usuário)**:
+  `situacao_registro` ("Ativo"/"Inativo") em `buscar_produtos`/
+  `GET /produtos/alimentos` — a API espera `'S'`/`'N'` em
+  `filter[situacaoProduto]` (confirmado ao vivo), tradução fica só no
+  módulo. Sozinho já conta como filtro válido (mesmo comportamento da
+  página oficial — dá pra "listar todos os ativos"). Frontend
+  (`/produtos`) ganhou dois `<select>` (Situação, Por página: 10/20/50),
+  formulário GET puro, mesmo padrão sem JS de cliente do resto do site.
+- **Menu "Registros de produtos" no frontend** (a pedido do usuário):
+  nova rota `/produtos`, mesmo padrão de `/timeline`/`/consultas-
+  publicas` (Server Component, form GET). `SituacaoRegistroBadge`
+  reaproveita as cores verde/vermelho de `NormaBadge`.
+- **Achado sério de deploy, só descoberto tentando publicar de
+  verdade**: nem Railway nem Vercel builda sozinho a partir de `git push`
+  neste projeto (os dois foram linkados via CLI, não pela integração
+  GitHub App) — ver seção "Deploy real (produção)" acima pro achado
+  completo e o passo a passo real em `DEPLOY.md`.
+
+### Integração da consulta de produtos com o `/chat` (a pedido do usuário)
+
+Pedido: o chat também responder perguntas de registro/regularização de
+produto, não só ter a aba separada.
+
+- **Nova intenção `produto_alimento`** (`app/intent.py`), roteada
+  ANTES de `consulta_publica`/`temporal`: o sinal linguístico real é
+  diferente do de norma — normas são "vigentes"/"revogadas", produtos
+  são "registrados"/"regularizados"/"notificados". O regex exige um
+  verbo copulativo (`está`/`são`/`é`/`foi`/`tem`/`têm`...) logo ANTES do
+  particípio, não o particípio sozinho — sem isso, uma pergunta temática
+  sobre o PROCESSO em geral ("como funciona a notificação de
+  suplementos?") seria roteada errado pra consulta de produto em vez de
+  ir pro RAG temático. Testado com 14 frases reais (8 devem ativar,
+  6 não) antes de aceitar o regex — `tests/test_intent.py`.
+- **Extração dos termos de busca via LLM** (`app/llm.py::
+  extrair_termos_busca_produto`), decisão do usuário: uma chamada
+  dedicada e barata transforma a pergunta livre ("a whey da growth
+  ainda tá regularizada?") em JSON `{nome_produto, marca,
+  detentor_registro}` — mesmo padrão do resto do projeto (Python decide
+  o que buscar, LLM só extrai/formata), sem precisar de tool-calling.
+  Nunca lança em resposta malformada (JSON quebrado -> tudo `None`,
+  tratado como "não identificado").
+- **3 achados reais, só apareceram testando de ponta a ponta com
+  perguntas de verdade** (não em teste mockado — as duas primeiras
+  perguntas reais testadas deram falso "não encontrei" pra produtos que
+  se sabia existirem):
+  1. **`nome_produto` composto demais não bate com a descrição
+     telegráfica da ANVISA**: a LLM extraía "whey protein" (fazendo
+     sentido em português), mas o cadastro da ANVISA só tem "WHEY 23.40
+     HIGH POTE PEAD" — sem a palavra "protein" em lugar nenhum, filtro
+     de substring não bate. Corrigido no prompt de extração: instrução
+     explícita pra manter `nome_produto` na palavra única mais genérica
+     possível ("whey", não "whey protein").
+  2. **Achado mais sério, na raiz (afetava `/produtos` também, não só o
+     chat)**: `filter[detentorRegistro]` da API da ANVISA só aceita
+     **CNPJ exato** — razão social, mesmo completa e exata, devolve 0
+     resultados sempre. A página oficial nunca manda texto livre pra
+     esse filtro: o campo "Empresa" lá é um autocomplete
+     (`input-empresa.directive.js`) que resolve nome -> CNPJ num
+     endpoint separado (`/api/empresa/?filter[razaoSocial]=...`, achado
+     lendo `empresa.service.js`) antes de filtrar produtos. Corrigido na
+     raiz, em `buscar_produtos` (`app/ingest/consultas_alimentos.py`):
+     quando `detentor_registro` não parece CNPJ (`_eh_cnpj`), resolve via
+     novo `buscar_empresas` primeiro — beneficia `/produtos` e o chat ao
+     mesmo tempo, sem duplicar lógica.
+  3. **Mais de uma empresa pode bater com o mesmo nome parcial**: grupos
+     econômicos com várias razões sociais quase idênticas, cada uma seu
+     CNPJ (achado real buscando "belapin": 4 CNPJs candidatos, só **um**
+     tinha o produto perguntado, e não era o primeiro da lista). Corrigido
+     tentando até 3 CNPJs candidatos em sequência, parando no primeiro
+     que trouxer produto (`_MAX_CANDIDATOS_EMPRESA`).
+- **Degrau de relaxamento de busca** (`app/chat.py::
+  _combinacoes_busca`/`_buscar_produtos_para_chat`): mesmo com o prompt
+  de extração melhorado, a LLM ainda pode duplicar a mesma empresa nos
+  campos `marca` e `detentor_registro` (achado real: "creatina da
+  belapin" virou `marca="belapin"` + `detentor_registro="belapin
+  industria..."`, e como todo filtro é AND, isso zerava o resultado
+  mesmo o produto existindo). Em vez de tentar blindar o prompt pra
+  sempre acertar 100% (frágil por natureza), a busca tenta uma escada de
+  combinações cada vez menos específica (tudo -> nome+empresa ->
+  nome+marca -> só nome -> só marca -> só empresa), parando na primeira
+  que trouxer resultado — robusto a erro de extração por construção, não
+  por sorte do prompt.
+- **`RespostaChat`/`RespostaChatAPI` ganharam `produtos: list[...]`**
+  (paralelo a `normas`) — `ProdutoCitado` (chat) e `ProdutoCitadoResponse`
+  (API) espelham só os campos que viram card no frontend (não o objeto
+  `ProdutoAlimento` inteiro). Frontend (`app/page.tsx`, chat): cards de
+  produto no mesmo lugar dos cards de norma, reaproveitando
+  `SituacaoRegistroBadge`.
+- Validado de ponta a ponta com tráfego real (2 chamadas de LLM +
+  chamadas reais na ANVISA, não teste mockado): "o whey da absolut
+  nutrition está regularizado?" -> achou os 5 produtos reais, todos
+  ATIVO, resposta cita cada um com nº de notificação e vencimento;
+  "a creatina 100% da belapin industria e comercio de alimenticios está
+  registrada?" -> achou os 2 produtos reais (só depois do fix de
+  resolução de empresa — antes dava falso "não encontrei"), e a própria
+  LLM acrescentou espontaneamente a distinção "notificado" vs
+  "registrado" (dado real do campo `tipo_regularizacao` no contexto);
+  pergunta com produto/marca inventados -> "não encontrei" honesto, sem
+  alucinar. `teve_citacao` também passou a considerar produtos citados,
+  não só normas.
 
 ## Milestones (status)
 

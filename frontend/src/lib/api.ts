@@ -52,10 +52,19 @@ export interface NormaCitada {
   url_origem: string;
 }
 
+export interface ProdutoCitado {
+  numero_processo: string;
+  descricao: string;
+  situacao_registro: string | null;
+  detentor_razao_social: string | null;
+  url_origem: string;
+}
+
 export interface RespostaChat {
   resposta: string;
   fontes: string[];
   normas: NormaCitada[];
+  produtos: ProdutoCitado[];
 }
 
 export async function enviarPergunta(mensagem: string): Promise<RespostaChat> {
