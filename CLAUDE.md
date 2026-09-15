@@ -1077,6 +1077,60 @@ prejudicar a velocidade de resposta.
   0,75s — a mesma busca do exemplo do usuário, ponta a ponta (browser →
   Vercel → Railway → ANVISA), sem tocar o banco.
 
+### Login (pós-M7, a pedido do usuário)
+
+Pedido: proteger o site com usuário e senha. **Decisão do usuário**: login
+único compartilhado (não multiusuário, sem tabela de conta no Supabase) e
+só o frontend fica atrás do login — a API no Railway continua respondendo
+direto pra quem souber a URL (não divulgada), sem exigir autenticação
+própria (ponto de atenção documentado no M7 pra `/alertas` já valia pro
+resto da API; continua valendo).
+
+- `frontend/src/lib/auth.ts`: usuário/senha vêm só de variável de
+  ambiente (`AUTH_USERNAME`/`AUTH_PASSWORD`), nunca do banco. Sessão é um
+  cookie HttpOnly cujo valor é um HMAC-SHA256 de um payload fixo, assinado
+  com `AUTH_SECRET` — não guarda usuário/senha no cookie, só prova que
+  quem o tem passou pelo `/api/login` (ou conhece `AUTH_SECRET`, que
+  nunca sai do servidor). Falha fechada: sem as 3 variáveis configuradas,
+  nenhuma sessão é criada nem validada — nunca abre a porta por engano
+  num ambiente mal configurado.
+- `frontend/src/proxy.ts` — **não `middleware.ts`**: achado real rodando
+  `npm run build` pela primeira vez com esse arquivo, o Next.js 16.3.5 já
+  trata `middleware.ts` como convenção depreciada em favor de `proxy.ts`
+  (mesmo comportamento, arquivo/nome de export diferente); migrado com o
+  codemod oficial (`npx @next/codemod@canary middleware-to-proxy .`) em
+  vez de escrever a convenção nova já deprecada. Intercepta toda rota
+  (exceto `/login`, `/api/login`, `/api/logout` e os assets estáticos do
+  Next) e redireciona pra `/login?next=<rota original>` se o cookie de
+  sessão não bater — cobre página E rota (`/api/chat` incluso, senão
+  daria pra falar com o backend sem passar pelo login só chamando o proxy
+  do Next direto).
+- `POST /api/login`: compara usuário/senha em tempo aproximadamente
+  constante (evita vazar por timing quantos caracteres bateram — risco
+  baixo aqui, mas barato de mitigar), seta o cookie e redireciona pro
+  `next` original. `next` é validado (`proximaUrlSegura`) pra aceitar só
+  caminho interno começando com `/` e não `//` — sem isso,
+  `next=//evil.com` seria um open redirect (o browser trata `//` como
+  "mesmo protocolo, outro domínio"). `POST /api/logout` limpa o cookie.
+- Formulário de login é HTML puro (`<form method="POST">`), sem JS de
+  cliente — mesmo padrão do resto do frontend (`/timeline`,
+  `/consultas-publicas`, `/produtos` já eram forms GET puros).
+  `components/nav.tsx` ganhou um botão "Sair" (mesmo padrão, form POST) e
+  não renderiza os links de navegação na própria tela de `/login`.
+- Validado de ponta a ponta contra o servidor de dev real (não só
+  lint/build): sem cookie -> 307 pra `/login`; senha errada -> volta com
+  `?erro=1`; login certo -> cookie setado, `/` e `/produtos` voltam 200;
+  `/api/chat` sem cookie também redireciona (não só as páginas); cookie
+  forjado (valor arbitrário, sem o HMAC certo) é rejeitado; logout limpa
+  o cookie e a próxima requisição volta a exigir login.
+- **Pendente, não resolvido nesta sessão**: `AUTH_USERNAME`/
+  `AUTH_PASSWORD`/`AUTH_SECRET` de produção ainda não foram definidos na
+  Vercel (só existem valores de desenvolvimento local em
+  `frontend/.env.local`, fora do git) — o deploy de produção só fica
+  protegido de verdade depois que o usuário decidir o usuário/senha reais
+  e eu configurar via `vercel env add` (ou o usuário configurar direto no
+  dashboard da Vercel).
+
 ## Milestones (status)
 
 - [x] M0 — Reconhecimento das fontes.
