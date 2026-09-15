@@ -75,6 +75,50 @@ async def test_buscar_produtos_sem_filtro_nao_bate_na_rede() -> None:
     await cliente.aclose()
 
 
+async def test_buscar_produtos_situacao_registro_sozinho_e_filtro_valido() -> None:
+    """`situacao_registro` sozinho (sem nome/marca) já satisfaz o "pelo
+    menos um filtro" — mesmo comportamento da página oficial (dá pra
+    "listar todos os ativos")."""
+    listagem = _carregar("consultas_alimentos_busca_whey.json")
+
+    def handler(url: str, params: dict[str, str] | None) -> FakeResponse:
+        assert params is not None
+        assert params.get("filter[situacaoProduto]") == "S"
+        assert "filter[nomeProduto]" not in params
+        return FakeResponse(200, listagem)
+
+    cliente = ConsultasAnvisaClient(sessao=FakeSession(handler))
+    resultado = await buscar_produtos(cliente, situacao_registro="Ativo", tamanho_pagina=10)
+    await cliente.aclose()
+    assert len(resultado.itens) == 10
+
+
+async def test_buscar_produtos_situacao_registro_traduz_para_letra_da_api() -> None:
+    """Achado real, confirmado ao vivo: a API espera 'S'/'N' em
+    `filter[situacaoProduto]`, não 'Ativo'/'Inativo' — a tradução fica
+    só dentro do módulo, a API do RADAR ANVISA expõe o texto legível."""
+    listagem = _carregar("consultas_alimentos_busca_whey.json")
+
+    def handler_inativo(url: str, params: dict[str, str] | None) -> FakeResponse:
+        assert params is not None
+        assert params.get("filter[situacaoProduto]") == "N"
+        return FakeResponse(200, listagem)
+
+    cliente = ConsultasAnvisaClient(sessao=FakeSession(handler_inativo))
+    await buscar_produtos(cliente, nome_produto="whey", situacao_registro="Inativo")
+    await cliente.aclose()
+
+
+async def test_buscar_produtos_situacao_registro_invalido_nao_bate_na_rede() -> None:
+    def handler(url: str, params: dict[str, str] | None) -> FakeResponse:
+        raise AssertionError("não deveria ter feito requisição nenhuma")
+
+    cliente = ConsultasAnvisaClient(sessao=FakeSession(handler))
+    with pytest.raises(ValueError, match="situacao_registro inválido"):
+        await buscar_produtos(cliente, nome_produto="whey", situacao_registro="ativo")
+    await cliente.aclose()
+
+
 async def test_construcao_padrao_manda_referer_e_authorization() -> None:
     """Achado real: sem `Referer` o Cloudflare bloqueia com 403 mesmo com
     `curl_cffi` — trava aqui se algum dia sumir do cliente por engano."""

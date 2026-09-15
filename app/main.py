@@ -183,6 +183,7 @@ async def produtos_alimentos(
     detentor_registro: str | None = None,
     numero_processo: str | None = None,
     numero_registro_notificacao: str | None = None,
+    situacao_registro: str | None = None,
     pagina: int = 1,
     tamanho_pagina: int = 10,
 ) -> BuscaProdutosAlimentosResponse:
@@ -203,6 +204,10 @@ async def produtos_alimentos(
         raise HTTPException(status_code=422, detail="tamanho_pagina deve estar entre 1 e 50")
     if pagina <= 0:
         raise HTTPException(status_code=422, detail="pagina deve ser maior ou igual a 1")
+    if situacao_registro is not None and situacao_registro not in ("Ativo", "Inativo"):
+        raise HTTPException(
+            status_code=422, detail="situacao_registro deve ser 'Ativo' ou 'Inativo'"
+        )
     cliente = ConsultasAnvisaClient()
     try:
         resultado = await buscar_produtos(
@@ -212,6 +217,7 @@ async def produtos_alimentos(
             detentor_registro=detentor_registro,
             numero_processo=numero_processo,
             numero_registro_notificacao=numero_registro_notificacao,
+            situacao_registro=situacao_registro,
             pagina=pagina,
             tamanho_pagina=tamanho_pagina,
         )

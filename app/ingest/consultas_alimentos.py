@@ -238,6 +238,14 @@ _CAMPOS_FILTRO = {
     "numero_registro_notificacao": "filter[numeroRegistroNotificacao]",
 }
 
+# A API espera 'S'/'N' pra situacaoProduto (confirmado ao vivo, testando
+# os dois valores e comparando `situacaoRegistro` do resultado — bate
+# exatamente com `tiposSituacaoOptions` do controller Angular). Exposto
+# pra fora como "Ativo"/"Inativo" (mesmo texto que já volta em
+# `situacao_registro`), não como 'S'/'N' cru — mais legível pra quem
+# consome a API, tradução fica só aqui dentro.
+_SITUACAO_PRODUTO_MAP = {"Ativo": "S", "Inativo": "N"}
+
 
 async def buscar_produtos(
     cliente: ConsultasAnvisaClient,
@@ -247,14 +255,22 @@ async def buscar_produtos(
     detentor_registro: str | None = None,
     numero_processo: str | None = None,
     numero_registro_notificacao: str | None = None,
+    situacao_registro: str | None = None,
     pagina: int = 1,
     tamanho_pagina: int = 10,
 ) -> ResultadoBuscaProdutos:
     """Busca produtos de alimentos (inclui suplementos) por nome, marca,
-    CNPJ/razão social do detentor, nº de processo ou nº de registro/
-    notificação. Pelo menos um filtro é obrigatório — a própria API rejeita
-    busca totalmente vazia (`MSG-004`, confirmado ao vivo); evita gastar
-    uma requisição pra descobrir isso de novo."""
+    CNPJ/razão social do detentor, nº de processo, nº de registro/
+    notificação e/ou situação (`"Ativo"`/`"Inativo"`). Pelo menos um
+    filtro é obrigatório — a própria API rejeita busca totalmente vazia
+    (`MSG-004`, confirmado ao vivo); evita gastar uma requisição pra
+    reaprender isso. `situacao_registro` sozinho já conta como filtro
+    válido (mesmo comportamento da página oficial — dá pra "listar todos
+    os ativos", sem nome/marca)."""
+    if situacao_registro is not None and situacao_registro not in _SITUACAO_PRODUTO_MAP:
+        raise ValueError(
+            f"situacao_registro inválido: {situacao_registro!r} (esperado 'Ativo' ou 'Inativo')"
+        )
     valores = {
         "nome_produto": nome_produto,
         "marca": marca,
@@ -263,10 +279,12 @@ async def buscar_produtos(
         "numero_registro_notificacao": numero_registro_notificacao,
     }
     params = {_CAMPOS_FILTRO[campo]: valor for campo, valor in valores.items() if valor}
+    if situacao_registro:
+        params["filter[situacaoProduto]"] = _SITUACAO_PRODUTO_MAP[situacao_registro]
     if not params:
         raise ValueError(
             "informe ao menos um filtro (nome_produto, marca, detentor_registro, "
-            "numero_processo ou numero_registro_notificacao)"
+            "numero_processo, numero_registro_notificacao ou situacao_registro)"
         )
     params["page"] = str(pagina)
     params["count"] = str(tamanho_pagina)

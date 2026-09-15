@@ -147,6 +147,7 @@ export interface FiltroProdutosAlimentos {
   detentorRegistro?: string;
   numeroProcesso?: string;
   numeroRegistroNotificacao?: string;
+  situacaoRegistro?: "Ativo" | "Inativo";
   pagina?: number;
   tamanhoPagina?: number;
 }
@@ -169,6 +170,7 @@ export async function buscarProdutosAlimentos(
     detentorRegistro,
     numeroProcesso,
     numeroRegistroNotificacao,
+    situacaoRegistro,
     pagina = 1,
     tamanhoPagina = 10,
   } = filtro;
@@ -183,6 +185,7 @@ export async function buscarProdutosAlimentos(
   if (numeroRegistroNotificacao) {
     params.set("numero_registro_notificacao", numeroRegistroNotificacao);
   }
+  if (situacaoRegistro) params.set("situacao_registro", situacaoRegistro);
   return apiFetch<BuscaProdutosAlimentos>(`/produtos/alimentos?${params.toString()}`, {
     cache: "no-store",
   });

@@ -7,10 +7,15 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { SituacaoRegistroBadge } from "@/components/situacao-registro-badge";
 
-const TAMANHO_PAGINA = 10;
+const TAMANHO_PAGINA_PADRAO = 10;
+const TAMANHOS_PAGINA = [10, 20, 50];
 
 function primeiro(valor: string | string[] | undefined): string | undefined {
   return Array.isArray(valor) ? valor[0] : valor;
+}
+
+function situacaoValida(valor: string | undefined): "Ativo" | "Inativo" | undefined {
+  return valor === "Ativo" || valor === "Inativo" ? valor : undefined;
 }
 
 export default async function ProdutosPage({
@@ -20,32 +25,42 @@ export default async function ProdutosPage({
   const nomeProduto = primeiro(params.nome_produto) ?? "";
   const marca = primeiro(params.marca) ?? "";
   const detentorRegistro = primeiro(params.detentor_registro) ?? "";
+  const situacao = situacaoValida(primeiro(params.situacao_registro));
   const paginaParam = primeiro(params.pagina);
   const pagina = Number(paginaParam) > 0 ? Number(paginaParam) : 1;
+  const tamanhoPaginaParam = Number(primeiro(params.tamanho_pagina));
+  const tamanhoPagina = TAMANHOS_PAGINA.includes(tamanhoPaginaParam)
+    ? tamanhoPaginaParam
+    : TAMANHO_PAGINA_PADRAO;
 
-  const temFiltro = Boolean(nomeProduto || marca || detentorRegistro);
+  const temFiltro = Boolean(nomeProduto || marca || detentorRegistro || situacao);
 
   const resultado = temFiltro
     ? await buscarProdutosAlimentos({
         nomeProduto: nomeProduto || undefined,
         marca: marca || undefined,
         detentorRegistro: detentorRegistro || undefined,
+        situacaoRegistro: situacao,
         pagina,
-        tamanhoPagina: TAMANHO_PAGINA,
+        tamanhoPagina,
       }).catch(() => null)
-    : { itens: [], pagina: 1, tamanho_pagina: TAMANHO_PAGINA };
+    : { itens: [], pagina: 1, tamanho_pagina: tamanhoPagina };
 
   // paginação "próxima/anterior", não "página X de Y" — a API da ANVISA
   // não devolve um total confiável (ver research/FONTES.md, Addendum
   // pós-M7), então uma página cheia é o único sinal que temos de que pode
   // haver mais itens.
-  const podeTerProxima = (resultado?.itens.length ?? 0) === TAMANHO_PAGINA;
+  const podeTerProxima = (resultado?.itens.length ?? 0) === tamanhoPagina;
 
   function paginaHref(novaPagina: number): string {
     const p = new URLSearchParams();
     if (nomeProduto) p.set("nome_produto", nomeProduto);
     if (marca) p.set("marca", marca);
     if (detentorRegistro) p.set("detentor_registro", detentorRegistro);
+    if (situacao) p.set("situacao_registro", situacao);
+    if (tamanhoPagina !== TAMANHO_PAGINA_PADRAO) {
+      p.set("tamanho_pagina", String(tamanhoPagina));
+    }
     if (novaPagina > 1) p.set("pagina", String(novaPagina));
     const qs = p.toString();
     return qs ? `/produtos?${qs}` : "/produtos";
@@ -112,6 +127,38 @@ export default async function ProdutosPage({
             className="rounded-md border border-input bg-background px-2.5 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="situacao_registro" className="text-xs text-muted-foreground">
+            Situação
+          </label>
+          <select
+            id="situacao_registro"
+            name="situacao_registro"
+            defaultValue={situacao ?? ""}
+            className="rounded-md border border-input bg-background px-2.5 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+          >
+            <option value="">Todos</option>
+            <option value="Ativo">Ativos</option>
+            <option value="Inativo">Inativos</option>
+          </select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="tamanho_pagina" className="text-xs text-muted-foreground">
+            Por página
+          </label>
+          <select
+            id="tamanho_pagina"
+            name="tamanho_pagina"
+            defaultValue={String(tamanhoPagina)}
+            className="rounded-md border border-input bg-background px-2.5 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+          >
+            {TAMANHOS_PAGINA.map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </div>
         <button
           type="submit"
           className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
@@ -130,7 +177,7 @@ export default async function ProdutosPage({
 
       {!temFiltro && (
         <p className="text-sm text-muted-foreground">
-          Informe pelo menos um filtro (nome do produto, marca ou empresa) pra buscar.
+          Informe pelo menos um filtro (nome do produto, marca, empresa ou situação) pra buscar.
         </p>
       )}
 
