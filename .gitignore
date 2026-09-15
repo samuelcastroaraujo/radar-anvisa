@@ -17,6 +17,12 @@ node_modules/
 .next/
 out/
 
+# link do projeto Vercel (IDs de org/projeto, não segredo, mas não precisa
+# versionar) — criado na raiz pra rodar `vercel deploy` de fora de frontend/,
+# já que o "Root Directory" do projeto na Vercel está configurado como
+# "frontend" (deploy espera o monorepo inteiro, não só a pasta)
+.vercel/
+
 # dados baixados (não versionar conteúdo bruto de produção)
 data/raw/
 *.zip

@@ -557,10 +557,36 @@ ainda está vigente?" corretamente com **REVOGADA** — o requisito mais
 crítico do projeto, validado com tráfego real de produção, não só em
 teste local.
 
-Pendente: conectar o repositório GitHub ao projeto da Vercel pra deploy
-automático a cada push (a CLI não autoriza sozinha o "Vercel for GitHub"
-— precisa ser feito uma vez pelo dashboard); e as credenciais opcionais
-de alerta (Resend/Telegram, ver M7).
+Pendente: conectar o repositório GitHub ao projeto da Vercel *e* ao
+serviço do Railway pra deploy automático a cada push (a CLI não autoriza
+sozinha essas integrações — precisa ser feito uma vez pelo dashboard de
+cada um; ver achado abaixo); e as credenciais opcionais de alerta
+(Resend/Telegram, ver M7).
+
+**Achado real, só descoberto tentando fazer um deploy de verdade (pós-M7,
+"registro de produtos")**: nem Railway nem Vercel builda sozinho a partir
+de `git push` **neste projeto** — os dois foram linkados via CLI, não
+pela integração GitHub App. Confirmado batendo `git push` real e o
+endpoint novo continuar 404 em produção por 10+ minutos; `railway
+deployment list` mostrou que o único deploy disparado no período tinha
+`meta.reason: "redeploy"` (reaproveita a imagem já buildada, não builda
+de novo — foi um `railway redeploy` de uma sessão anterior, não o push).
+Deploy de verdade exige `railway up --detach` (Railway) e, da raiz do
+repo (não de dentro de `frontend/` — o projeto na Vercel tem "Root
+Directory" = `frontend`, então rodar de dentro da própria pasta falha
+com "Root Directory frontend does not exist"), `vercel deploy --prod`
+(Vercel, com o link de `frontend/.vercel/project.json` copiado pra
+`.vercel/` na raiz). Os dois CLIs já estavam autenticados neste ambiente
+(`railway whoami` → conta do Railway; `vercel whoami` →
+`karineluizadv-8915`) — não precisei pedir credencial nova. Documentado
+o passo a passo real em `DEPLOY.md` (seções 2.3 e 4). **Achado à parte**:
+o domínio padrão `frontend-karineluizadv-8915.vercel.app` (o que o
+usuário estava usando) tem a proteção "Vercel Authentication" (SSO) do
+time ligada — 302 pro login da Vercel pra quem não é do time; o alias
+customizado publicado (`frontend-phi-ten-....vercel.app`) não tem essa
+proteção e é o que efetivamente funciona como URL pública. `vercel
+deploy --prod` promove pra produção e atualiza todos os aliases de
+produção existentes automaticamente (não precisa re-apontar nada à mão).
 
 **3º bug real, achado com tráfego de produção de verdade (não pelo
 deploy em si — pela primeira pergunta genérica de um usuário)**:

@@ -10,9 +10,11 @@ opcional.
 - Frontend: https://frontend-phi-ten-lhullf72f6.vercel.app
 - Repositório: https://github.com/samuelcastroaraujo/radar-anvisa (privado)
 
-Pendente: conectar o GitHub ao projeto da Vercel pra deploy automático a
-cada push (só dá pra fazer pelo dashboard, ver seção 4), e as credenciais
-opcionais de alerta (seção 3).
+Pendente: conectar o GitHub ao projeto da Vercel *e* ao serviço do
+Railway pra deploy automático a cada push (hoje os dois exigem um
+gatilho manual via CLI — `railway up`/`vercel deploy --prod`, ver seções
+2.3 e 4 — só dá pra ligar o automático pelo dashboard de cada um), e as
+credenciais opcionais de alerta (seção 3).
 
 ```
 Vercel (frontend, Next.js)
@@ -107,9 +109,26 @@ fazer, só documentado aqui pra explicar por que esse parâmetro existe.
 
 ### 2.3. Deploy
 
-Qualquer `git push` na branch conectada (`main`) dispara um novo deploy
-automaticamente. Acompanhe os logs em **Deployments** — o build roda
-`uv sync --frozen --no-dev` e depois sobe o Uvicorn.
+**Correção (achado real, não como o guia original supunha)**: neste
+projeto o serviço do Railway **não** está com o gatilho de deploy
+automático em push ligado — confirmado batendo `git push` real e o
+serviço continuar servindo o build antigo (`/health` respondia, um
+endpoint novo não). `railway status` mostra o serviço linkado, mas os
+deploys que aparecem em `railway deployment list` têm
+`meta.reason: "redeploy"` (reaproveita a imagem já buildada, não builda
+de novo) — ou seja, builds novos exigem um gatilho explícito. Pra
+buildar e subir o código local de verdade:
+
+```bash
+railway link   # uma vez, associa o diretório do projeto ao serviço certo
+railway up --detach
+```
+
+Acompanhe com `railway deployment list` (status `SUCCESS`/`FAILED`) ou
+`railway logs --build`. **Se o seu projeto tiver o "Deploy Triggers" do
+GitHub configurado** (Settings → Deploy Triggers, dá pra ligar pelo
+dashboard), aí sim todo `git push` na branch conectada builda sozinho —
+só não é o padrão neste projeto hoje.
 
 ### 2.4. Validar
 
@@ -212,6 +231,32 @@ algo recente, a notificação chega na hora.
    `CLAUDE.md`, M6, pra decisão completa.
 5. **Deploy**. A Vercel te dá uma URL tipo
    `https://radar-anvisa.vercel.app`.
+
+**Correção (achado real)**: neste projeto o deploy **não** está
+conectado a "todo push builda sozinho" — o projeto na Vercel foi linkado
+via CLI (`vercel link`, gera `frontend/.vercel/project.json`), não pela
+integração GitHub App. Pra publicar de verdade:
+
+```bash
+# de dentro de frontend/: `vercel link` uma vez (autentica e associa o
+# projeto). Rodar `vercel deploy --prod` de dentro de frontend/ falha com
+# "Root Directory frontend does not exist" — o projeto está configurado
+# esperando o monorepo inteiro (Root Directory = "frontend"), não só a
+# pasta. Rode da RAIZ do repo, com o mesmo link copiado pra lá:
+cp frontend/.vercel/project.json .vercel/project.json   # uma vez
+vercel deploy --prod   # da raiz — builda de verdade e promove a produção
+```
+
+`vercel deploy --prod` já atualiza sozinho todos os aliases de produção
+existentes (o domínio principal do projeto e qualquer alias customizado
+apontando pra produção). **Achado à parte**: o domínio padrão
+`<projeto>-<time>.vercel.app` (ex.: `frontend-SEUTIME.vercel.app`) pode
+vir com a proteção "Vercel Authentication" (SSO) ligada por padrão —
+volta 302 pro login da Vercel pra quem não é do time. O alias customizado
+(o que aparece publicado de fato, ex.: `frontend-phi-ten-....vercel.app`)
+não tem essa proteção. Pra tirar do domínio padrão, é um toggle em
+**Project Settings → Deployment Protection** (não mexi nisso — é uma
+configuração do time, não do código).
 
 ### Validar
 
