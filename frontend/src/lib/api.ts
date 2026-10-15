@@ -142,12 +142,14 @@ export interface ProdutoAlimento {
   data_atualizacao: string | null;
   mes_ano_vencimento: string | null;
   url_origem: string;
+  fonte?: "consulta_ao_vivo" | "dados_abertos";
 }
 
 export interface BuscaProdutosAlimentos {
   itens: ProdutoAlimento[];
   pagina: number;
   tamanho_pagina: number;
+  fonte?: "consulta_ao_vivo" | "dados_abertos";
 }
 
 export interface FiltroProdutosAlimentos {

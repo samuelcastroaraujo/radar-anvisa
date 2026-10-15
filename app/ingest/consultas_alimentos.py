@@ -38,6 +38,7 @@ from curl_cffi.requests.exceptions import HTTPError, RequestException
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential_jitter
 
 from app.config import get_settings
+from app.ingest import dados_abertos_alimentos as dados_abertos
 from app.ingest.anvisalegis import RateLimiter
 
 BASE_URL = "https://consultas.anvisa.gov.br"
@@ -59,6 +60,9 @@ class ProdutoAlimento:
     data_atualizacao: datetime | None
     mes_ano_vencimento: str | None
     url_origem: str
+    # "consulta_ao_vivo" (API da ANVISA) ou "dados_abertos" (CSV, fallback
+    # quando a API ao vivo exige Turnstile — ver dados_abertos_alimentos.py).
+    fonte: str = "consulta_ao_vivo"
 
 
 @dataclass
@@ -66,6 +70,7 @@ class ResultadoBuscaProdutos:
     itens: list[ProdutoAlimento]
     pagina: int
     tamanho_pagina: int
+    fonte: str = "consulta_ao_vivo"
 
 
 def _url_detalhe(numero_processo: str) -> str:
@@ -155,7 +160,32 @@ def _eh_processo_nao_encontrado(exc: HTTPError) -> bool:
     return "nenhuma apresenta" in str(corpo.get("error", "")).lower()
 
 
+def _eh_turnstile(exc: BaseException) -> bool:
+    """A API exige token Cloudflare Turnstile (403 `turnstile_invalido`) —
+    só um navegador real gera; repetir não ajuda e não vamos contornar."""
+    resp = getattr(exc, "response", None)
+    if resp is None or resp.status_code != 403:
+        return False
+    try:
+        return "turnstile" in str(resp.json().get("codigo", "")).lower()
+    except Exception:
+        return False
+
+
+# Depois de um Turnstile, pula a API ao vivo por um tempo (vai direto pro
+# fallback de dados abertos) em vez de pagar um round-trip falho por busca.
+_ao_vivo_bloqueado_ate = 0.0
+_BLOQUEIO_SEGUNDOS = 600.0
+
+
+def _bloquear_ao_vivo() -> None:
+    global _ao_vivo_bloqueado_ate
+    _ao_vivo_bloqueado_ate = time.monotonic() + _BLOQUEIO_SEGUNDOS
+
+
 def _deve_tentar_de_novo(exc: BaseException) -> bool:
+    if _eh_turnstile(exc):
+        return False
     if isinstance(exc, HTTPError):
         # "processo não encontrado" é determinístico — repetir não ajuda.
         # Todo o resto (inclusive o 403 intermitente do Cloudflare, ver
@@ -319,6 +349,26 @@ async def buscar_empresas(
     return itens[:tamanho] if tamanho > 0 else itens
 
 
+def _linha_para_produto(ln: dados_abertos.Linha) -> ProdutoAlimento:
+    return ProdutoAlimento(
+        numero_processo=ln.processo,
+        numero_registro_ou_notificacao=ln.registro,
+        descricao=ln.produto,
+        situacao_registro=ln.situacao or None,
+        tipo_regularizacao=None,
+        situacao_processo=None,
+        detentor_cnpj=ln.cnpj or None,
+        detentor_razao_social=ln.razao_social or None,
+        categorias=[ln.categoria] if ln.categoria else [],
+        marcas=[],
+        data_regularizacao=ln.data_finalizacao,
+        data_atualizacao=None,
+        mes_ano_vencimento=ln.vencimento.strftime("%m/%Y") if ln.vencimento else None,
+        url_origem=_url_detalhe(ln.processo),
+        fonte=dados_abertos.FONTE,
+    )
+
+
 async def buscar_produtos(
     cliente: ConsultasAnvisaClient,
     *,
@@ -331,6 +381,71 @@ async def buscar_produtos(
     pagina: int = 1,
     tamanho_pagina: int = 10,
     enriquecer_marcas: bool = False,
+) -> ResultadoBuscaProdutos:
+    """Tenta a consulta ao vivo; se a ANVISA exigir Turnstile (403),
+    cai pro CSV de dados abertos (`fonte="dados_abertos"`)."""
+    if situacao_registro is not None and situacao_registro not in _SITUACAO_PRODUTO_MAP:
+        raise ValueError(
+            f"situacao_registro inválido: {situacao_registro!r} (esperado 'Ativo' ou 'Inativo')"
+        )
+    filtros = {
+        "nome_produto": nome_produto,
+        "marca": marca,
+        "detentor_registro": detentor_registro,
+        "numero_processo": numero_processo,
+        "numero_registro_notificacao": numero_registro_notificacao,
+        "situacao_registro": situacao_registro,
+    }
+    if not any(filtros.values()):
+        raise ValueError(
+            "informe ao menos um filtro (nome_produto, marca, detentor_registro, "
+            "numero_processo, numero_registro_notificacao ou situacao_registro)"
+        )
+
+    async def _dados_abertos() -> ResultadoBuscaProdutos:
+        linhas = dados_abertos.filtrar(await dados_abertos.carregar_indice(), **filtros)
+        ini = (pagina - 1) * tamanho_pagina
+        return ResultadoBuscaProdutos(
+            itens=[_linha_para_produto(ln) for ln in linhas[ini : ini + tamanho_pagina]],
+            pagina=pagina,
+            tamanho_pagina=tamanho_pagina,
+            fonte=dados_abertos.FONTE,
+        )
+
+    if time.monotonic() < _ao_vivo_bloqueado_ate:
+        return await _dados_abertos()
+    try:
+        return await _buscar_produtos_ao_vivo(
+            cliente,
+            nome_produto=nome_produto,
+            marca=marca,
+            detentor_registro=detentor_registro,
+            numero_processo=numero_processo,
+            numero_registro_notificacao=numero_registro_notificacao,
+            situacao_registro=situacao_registro,
+            pagina=pagina,
+            tamanho_pagina=tamanho_pagina,
+            enriquecer_marcas=enriquecer_marcas,
+        )
+    except (HTTPError, RequestException) as exc:
+        if not _eh_turnstile(exc):
+            raise
+        _bloquear_ao_vivo()
+        return await _dados_abertos()
+
+
+async def _buscar_produtos_ao_vivo(
+    cliente: ConsultasAnvisaClient,
+    *,
+    nome_produto: str | None,
+    marca: str | None,
+    detentor_registro: str | None,
+    numero_processo: str | None,
+    numero_registro_notificacao: str | None,
+    situacao_registro: str | None,
+    pagina: int,
+    tamanho_pagina: int,
+    enriquecer_marcas: bool,
 ) -> ResultadoBuscaProdutos:
     """Busca produtos de alimentos (inclui suplementos) por nome, marca,
     CNPJ/razão social do detentor, nº de processo, nº de registro/
@@ -440,16 +555,23 @@ async def detalhe_produto(
     concorrência via semáforo (ver `_enriquecer_com_marcas`); qualquer
     chamador externo (inclusive `GET /produtos/alimentos/{numero_processo}`)
     continua respeitando o limite por padrão."""
-    try:
-        resp = await cliente._get(
-            f"/api/consulta/alimento/produtos/{numero_processo}",
-            respeitar_limite=respeitar_limite,
-        )
-    except HTTPError as exc:
-        if _eh_processo_nao_encontrado(exc):
-            return None
-        raise
-    return _parse_produto(resp.json())
+    if time.monotonic() >= _ao_vivo_bloqueado_ate:
+        try:
+            resp = await cliente._get(
+                f"/api/consulta/alimento/produtos/{numero_processo}",
+                respeitar_limite=respeitar_limite,
+            )
+            return _parse_produto(resp.json())
+        except HTTPError as exc:
+            if _eh_processo_nao_encontrado(exc):
+                return None
+            if not _eh_turnstile(exc):
+                raise
+            _bloquear_ao_vivo()
+    achados = dados_abertos.filtrar(
+        await dados_abertos.carregar_indice(), numero_processo=numero_processo
+    )
+    return _linha_para_produto(achados[0]) if achados else None
 
 
 # --- Enriquecimento de marca para a listagem (opt-in, ver buscar_produtos) ---

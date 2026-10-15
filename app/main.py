@@ -165,6 +165,7 @@ class ProdutoAlimentoResponse(BaseModel):
     data_atualizacao: datetime | None
     mes_ano_vencimento: str | None
     url_origem: str
+    fonte: str = "consulta_ao_vivo"
 
 
 def _produto_response(p: ProdutoAlimento) -> ProdutoAlimentoResponse:
@@ -175,6 +176,7 @@ class BuscaProdutosAlimentosResponse(BaseModel):
     itens: list[ProdutoAlimentoResponse]
     pagina: int
     tamanho_pagina: int
+    fonte: str = "consulta_ao_vivo"
 
 
 @app.get("/produtos/alimentos")
@@ -247,6 +249,7 @@ async def produtos_alimentos(
         itens=[_produto_response(p) for p in resultado.itens],
         pagina=resultado.pagina,
         tamanho_pagina=resultado.tamanho_pagina,
+        fonte=resultado.fonte,
     )
 
 

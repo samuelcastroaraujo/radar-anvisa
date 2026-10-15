@@ -187,6 +187,14 @@ export default async function ProdutosPage({
         </p>
       )}
 
+      {temFiltro && resultado?.fonte === "dados_abertos" && (
+        <p className="text-xs text-muted-foreground">
+          Resultados dos dados abertos da ANVISA (arquivo oficial, pode ter alguns dias de
+          atraso). Não trazem marca nem a distinção notificado/registrado — para isso, consulte
+          o item no site da ANVISA pelo link do produto.
+        </p>
+      )}
+
       {temFiltro && resultado !== null && resultado.itens.length === 0 && (
         <p className="text-sm text-muted-foreground">Nenhum produto encontrado.</p>
       )}
