@@ -183,7 +183,7 @@ export default async function ProdutosPage({
 
       {temFiltro && resultado === null && (
         <p className="text-sm text-destructive">
-          Não consegui buscar na ANVISA agora — o backend está no ar?
+          Não consegui buscar nos dados abertos da ANVISA agora — tente de novo em instantes.
         </p>
       )}
 

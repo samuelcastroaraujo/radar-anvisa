@@ -11,6 +11,8 @@
  * (Vercel -> Railway).
  */
 
+import { buscarProdutosDadosAbertos } from "./produtos-dados-abertos";
+
 const API_BASE_URL = process.env.API_BASE_URL ?? "http://localhost:8000";
 
 export class ApiError extends Error {
@@ -197,9 +199,8 @@ export async function buscarProdutosAlimentos(
     params.set("numero_registro_notificacao", numeroRegistroNotificacao);
   }
   if (situacaoRegistro) params.set("situacao_registro", situacaoRegistro);
-  return apiFetch<BuscaProdutosAlimentos>(`/produtos/alimentos?${params.toString()}`, {
-    cache: "no-store",
-  });
+  void params; // busca roda direto nos dados abertos, sem backend
+  return buscarProdutosDadosAbertos(filtro);
 }
 
 export interface StatusFonte {
